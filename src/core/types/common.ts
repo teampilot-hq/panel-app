@@ -1,3 +1,5 @@
+import {EventType, NotificationChannel, NotificationStatus} from "@/core/types/enum.ts";
+
 export type PagedResponse<T> = {
     contents: T[];
     pageNumber: number;
@@ -6,22 +8,21 @@ export type PagedResponse<T> = {
     totalContents: number
 }
 
-export type Navigation = {
-    name: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    href: string
-}
-
 export type Country = {
     name: string;
     code: string
 }
 
-export type Balance = {
-    label: 'Vacation' | 'Sick leave' | 'Paid time off';
-    leaveQuantity: number;
-    leaveUsed: number;
-    leaveColor: string;
-};
-
-export type Nullable<T> = T | null;
+export interface Notification {
+    id: number;
+    user: {
+        id: number;
+        name: string;
+    };
+    title: string;
+    description?: string;
+    date: string;
+    status: NotificationStatus;
+    event: EventType;
+    channel: NotificationChannel;
+}
