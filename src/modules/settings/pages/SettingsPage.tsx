@@ -1,6 +1,6 @@
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {BookOpen, Globe, Lock} from 'lucide-react';
+import {Bell, BookOpen, Globe, Lock} from 'lucide-react';
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 
@@ -20,6 +20,12 @@ export default function SettingsPage() {
             icon: Globe,
             path: '/settings/official-holidays',
             color: 'text-blue-600'
+        },
+        {
+            title: 'Notification',
+            icon: Bell,
+            path: '/notifications',
+            color: 'text-primary'
         },
         {
             title: 'Guide',

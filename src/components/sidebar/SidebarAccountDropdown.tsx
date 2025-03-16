@@ -46,7 +46,7 @@ export default function SidebarAccountDropdown({isActive, onClick}: AccountDropd
                     <div
                         className={clsx("flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 transition-colors", isActive ? "bg-indigo-100 bg-opacity-75 rounded-lg p-2" : '')}>
                         <div className="h-8 w-8 rounded-full  flex items-center justify-center">
-                            <UserAvatar user={user} size={32}/>
+                            <UserAvatar user={user} size={40}/>
                         </div>
                         <div className={clsx("flex-1 text-left", isActive ? "text-gray-700" : '')}>
                             <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>

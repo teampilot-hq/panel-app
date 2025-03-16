@@ -7,6 +7,7 @@ import OrganizationRoutes from "@/modules/organization/Routes.tsx";
 import SettingsRoutes from "@/modules/settings/Routes.tsx";
 import TeamRoutes from "@/modules/team/Routes.tsx";
 import UserRoutes from "@/modules/user/Routes.tsx";
+import NotificationRoutes from "@/modules/notification/Routes.tsx";
 
 export default function Root() {
     return (
@@ -19,6 +20,7 @@ export default function Root() {
             {SettingsRoutes()}
             {TeamRoutes()}
             {UserRoutes()}
+            {NotificationRoutes()}
         </Routes>
     )
 }

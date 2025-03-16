@@ -1,10 +1,10 @@
 import React, {useContext, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
-import {Bell, Building, Calendar, CalendarCheck, Home, Settings, TreePalm, User, Users} from 'lucide-react';
-import {Button} from "@/components/ui/button.tsx";
+import {Building, Calendar, CalendarCheck, Home, Settings, TreePalm, User, Users} from 'lucide-react';
 import {UserContext} from "@/contexts/UserContext.tsx";
 import SidebarAccountDropdown from "@/components/sidebar/SidebarAccountDropdown.tsx";
 import Logo from "@/components/icon/Logo.tsx";
+import {NotificationBell} from "@/modules/notification/components/NotificationBell.tsx";
 import {UserRole} from "@/core/types/enum.ts";
 
 const navigationItems = {
@@ -44,15 +44,12 @@ export default function Sidebar() {
         <div className="left-0 hidden md:block md:w-[240px] lg:w-[280px]">
             <div className="bg-white shadow-sm h-full">
                 <div className="flex h-full flex-col">
-                    <div className="flex h-16 items-center border-b border-gray-200 px-6">
+                    <div className="flex justify-between h-16 items-center border-b border-gray-200 px-6">
                         <Link to="/" className="flex items-center gap-3">
                             <Logo/>
                             <span className="text-lg font-semibold text-gray-900">Teampilot</span>
                         </Link>
-                        <Button variant="ghost" size="icon"
-                                className="ml-auto h-8 w-8 text-gray-500 hover:text-gray-600">
-                            <Bell className="h-5 w-5"/>
-                        </Button>
+                        <NotificationBell/>
                     </div>
 
                     <div className="flex-1 overflow-y-auto px-4">

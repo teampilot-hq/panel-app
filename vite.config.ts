@@ -23,7 +23,7 @@ export default defineConfig({
         proxy: {
             // Proxy all requests starting with '/api'
             '/api': {
-                target: 'https://api.teamwize.app',
+                target: 'https://api.teampilot.app',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
             },

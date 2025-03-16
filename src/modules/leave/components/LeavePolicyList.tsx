@@ -181,7 +181,7 @@ function LeavePolicyRowItem({
                         <Badge
                             key={activatedType.typeId}
                             variant="outline"
-                            className="inline-flex items-center bg-gray-50 text-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium"
+                            className="inline-flex items-center bg-gray-100 text-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium border-none"
                         >
                             <span className="mr-1.5 text-base">{activatedType.symbol}</span>
                             <span className="mr-1">{activatedType.name}:</span>

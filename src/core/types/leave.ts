@@ -121,6 +121,7 @@ export type LeaveCheckResponse = {
     isAllowed: boolean;
     message: string;
     duration: number;
+    totalDays: number;
     yourConflicts: LeaveResponse[];
     teamConflicts: LeaveResponse[];
     holidays: HolidayResponse[];

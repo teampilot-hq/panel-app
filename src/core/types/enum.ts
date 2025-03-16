@@ -58,4 +58,3 @@ export enum Week {
     SATURDAY = "SATURDAY",
     SUNDAY = "SUNDAY"
 }
-
