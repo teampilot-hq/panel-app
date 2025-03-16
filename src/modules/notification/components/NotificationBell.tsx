@@ -12,7 +12,11 @@ export const NotificationBell: React.FC = () => {
     const [unreadCount, setUnreadCount] = useState<number>(0);
 
     useEffect(() => {
+        const intervalId = setInterval(async () => {
+            await fetchNotificationsCount();
+        }, 30_000);
         fetchNotificationsCount();
+        return () => clearInterval(intervalId);
     }, []);
 
     const fetchNotificationsCount = async () => {
@@ -41,7 +45,8 @@ export const NotificationBell: React.FC = () => {
             >
                 <Bell className="h-5 w-5"/>
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-primary text-xs text-white flex items-center justify-center">
+                    <span
+                        className="absolute top-0 right-0 h-4 w-4 rounded-full bg-primary text-xs text-white flex items-center justify-center">
                         {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                 )}
@@ -49,7 +54,7 @@ export const NotificationBell: React.FC = () => {
 
             {isOpen && (
                 <NotificationPopover
-                    setUnreadCount = {setUnreadCount}
+                    setUnreadCount={setUnreadCount}
                     onClose={toggleNotificationPanel}
                 />
             )}
