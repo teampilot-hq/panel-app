@@ -1,29 +1,9 @@
 import { PagedResponse } from '../types/common';
 import axiosInstance from './httpService';
-import {
-    EventSchema,
-    NotificationFilterRequest,
-    NotificationTemplate,
-    NotificationTrigger,
-    NotificationTriggerCreateRequest,
-    Notification, NotificationsCountResponse
+import {EventSchema, NotificationFilterRequest, NotificationTrigger, NotificationTriggerCreateRequest, Notification, NotificationsCountResponse, NotificationTriggerUpdateRequest
 } from '@/core/types/notifications.ts';
 
 const baseURL = '/v1/notifications';
-
-async function getTemplate(id: number): Promise<NotificationTemplate> {
-    const response = await axiosInstance.get(`${baseURL}/templates/${id}`);
-    return response.data;
-}
-
-async function getTemplates(): Promise<NotificationTemplate[]> {
-    const response = await axiosInstance.get(`${baseURL}/templates`);
-    return response.data;
-}
-
-async function deleteTemplate(id: number): Promise<void> {
-    await axiosInstance.delete(`${baseURL}/templates/${id}`);
-}
 
 async function getNotificationTriggers(): Promise<NotificationTrigger[]> {
     const response = await axiosInstance.get(`${baseURL}/triggers`);
@@ -45,8 +25,19 @@ async function getNotificationEventSchemas() : Promise<EventSchema[]> {
     return response.data;
 }
 
-async function deleteNotificationTrigger(id:number) : Promise<void> {
-    await axiosInstance.get(`${baseURL}/notifications/triggers/${id}`)
+async function deleteNotificationTrigger(id:number) {
+    const response = await axiosInstance.delete(`${baseURL}/triggers/${id}`);
+    return response.data;
+}
+
+async function updateNotificationTrigger(payload: NotificationTriggerUpdateRequest, id: number): Promise<NotificationTrigger> {
+    const response = await axiosInstance.put(`${baseURL}/triggers/${id}`, payload);
+    return response.data;
+}
+
+async function getNotificationTrigger(id:number): Promise<NotificationTrigger> {
+    const response = await axiosInstance.get(`${baseURL}/triggers/${id}`);
+    return response.data;
 }
 
 async function getNotificationsCount() : Promise<NotificationsCountResponse> {
@@ -59,4 +50,4 @@ async function createNotificationRead(payload: number[]): Promise<NotificationsC
     return response.data;
 }
 
-export {getTemplate, getTemplates, deleteTemplate, getNotificationTriggers, createNotificationTrigger, getNotifications, getNotificationEventSchemas, deleteNotificationTrigger,getNotificationsCount, createNotificationRead};
+export {getNotificationTriggers, createNotificationTrigger, getNotifications, getNotificationEventSchemas, deleteNotificationTrigger,getNotificationsCount, createNotificationRead, getNotificationTrigger, updateNotificationTrigger};

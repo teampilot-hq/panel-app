@@ -107,8 +107,7 @@ export const NotificationPopover = ({notifications, onClose, onMarkAsRead, onMar
 
                         <div className="space-y-4 max-h-[500px] overflow-auto">
                             <div className="bg-muted/50 p-3 rounded-md">
-                                <p className="text-sm leading-relaxed"
-                                   dangerouslySetInnerHTML={{__html: selectedNotification.textContent.replace(/\n/g, '<br />')}}></p>
+                                <p className="text-sm leading-relaxed" style={{ whiteSpace: "pre-line" }}>{selectedNotification.textContent}</p>
                             </div>
 
                             <div className="flex flex-col gap-1 text-xs text-muted-foreground">

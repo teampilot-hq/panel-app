@@ -20,13 +20,14 @@ export enum EventType {
   NOTIFICATION_CREATED = 'NOTIFICATION_CREATED'
 }
 
-export interface NotificationTemplate {
-  id: number;
-  name: string;
-  textTemplate: string;
-  htmlTemplate: string;
-  status: string;
+export enum NotificationReceptor {
+    USER = 'USER',
+    TEAM_ADMIN = 'TEAM_ADMIN',
+    ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+    ALL_TEAM_MEMBERS = 'ALL_TEAM_MEMBERS',
+    REVIEWERS = 'REVIEWERS'
 }
+
 
 export interface NotificationTrigger {
   id: number;
@@ -35,9 +36,8 @@ export interface NotificationTrigger {
   title:string;
   textTemplate:string;
   htmlTemplate:string;
-  template: NotificationTemplate;
   channels: NotificationChannel[];
-  receptors: string;
+  receptors: NotificationReceptor;
   status: NotificationTriggerStatus;
 }
 
@@ -47,14 +47,13 @@ export interface NotificationTriggerCreateRequest {
     textTemplate: string;
     htmlTemplate: string;
     eventType: EventType;
-    templateId: number;
     channels: NotificationChannel[];
-    receptors: string;
+    receptors: NotificationReceptor;
 }
 
 export interface NotificationFilterRequest {
     eventType?: EventType;
-    channel?: NotificationChannel;
+    channel?: NotificationChannel[];
     startDate?: string;
     endDate?: string;
 }
@@ -63,13 +62,12 @@ export interface Notification {
     id: number;
     title: string,
     user: UserResponse;
-    template: NotificationTemplate;
     trigger: NotificationTrigger;
     textContent: string;
     htmlContent: string;
     event: EventType;
     params: Record<string, any>;
-    channel: NotificationChannel;
+    channels: NotificationChannel[];
     sentAt: string;
     status: NotificationStatus;
 }
@@ -90,7 +88,7 @@ export interface EventSchema {
     name: string;
     description: string;
     schema: SchemaObject;
-    receptors: string[];
+    receptors: NotificationReceptor[];
 }
 
 export interface SchemaObject {
@@ -112,4 +110,14 @@ export interface ItemSchema {
     type: string;
     enumValues?: string[];
     properties?: FieldSchema[];
+}
+
+export interface NotificationTriggerUpdateRequest {
+    title: string
+    name: string;
+    textTemplate: string;
+    htmlTemplate: string;
+    eventType: EventType;
+    channels: NotificationChannel[];
+    receptors: NotificationReceptor
 }
