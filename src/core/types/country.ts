@@ -1,4 +1,7 @@
-import {Country} from '@/core/types/common.ts';
+export type Country = {
+    name: string;
+    code: string
+}
 
 export const country: Country[] = [
     {name: "Afghanistan", code: "AF"},

@@ -5,8 +5,3 @@ export type PagedResponse<T> = {
     totalPages: number;
     totalContents: number
 }
-
-export type Country = {
-    name: string;
-    code: string
-}
