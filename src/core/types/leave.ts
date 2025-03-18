@@ -35,6 +35,11 @@ export type LeaveTypeCreateRequest = {
     symbol: string;
 }
 
+export enum ApprovalMode {
+    ALL = 'ALL',
+    ANY = "ANY"
+}
+
 export type LeaveTypeResponse = {
     id: number;
     name: string;
@@ -49,6 +54,8 @@ export type LeavePolicyCreateRequest = {
     name: string;
     status: LeavePolicyStatus;
     activatedTypes: LeavePolicyActivatedTypeRequest[];
+    teamApprovers?: string[];
+    approvalMode?: ApprovalMode;
 }
 
 export enum LeavePolicyStatus {
@@ -66,7 +73,9 @@ export type LeavePolicyResponse = {
     id: number;
     name: string;
     activatedTypes: LeavePolicyActivatedTypeResponse[];
-    isDefault: boolean
+    isDefault: boolean;
+    teamApprovers?: string[];
+    approvalMode?: ApprovalMode;
 }
 
 export type LeavePolicyActivatedTypeResponse = {
@@ -109,6 +118,8 @@ export type LeavePolicyUpdateRequest = {
     name: string;
     status: LeavePolicyStatus;
     activatedTypes: LeavePolicyActivatedTypeRequest[];
+    teamApprovers?: string[];
+    approvalMode?: ApprovalMode;
 }
 
 export type LeaveCheckRequest = {

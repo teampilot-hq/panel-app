@@ -12,7 +12,6 @@ import {DeleteModal} from "@/modules/team/components/TeamDeleteDialog.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import TeamCreateDialog from "@/modules/team/components/TeamCreateDialog.tsx";
-import {Badge} from "@/components/ui/badge.tsx";
 import {z} from "zod";
 
 const FormSchema = z.object({
@@ -20,13 +19,7 @@ const FormSchema = z.object({
         message: "Team name must be at least 2 characters long",
     }).max(20, {
         message: "Team name must be under 20 characters",
-    }),
-    teamApprovers: z.array(z.string()).min(1, {
-        message: "Please select at least one team approver.",
-    }),
-    approvalMode: z.enum(["ALL", "ANY"], {
-        required_error: "Please select an approval mode.",
-    }),
+    })
 });
 
 type UpdateTeamInputs = z.infer<typeof FormSchema>;
@@ -85,8 +78,6 @@ export default function TeamsPage() {
                 {
                     name: data.name,
                     metadata: {},
-                    teamApprovers: data.teamApprovers,
-                    approvalMode: data.approvalMode,
                 },
                 teamId
             );
@@ -106,7 +97,7 @@ export default function TeamsPage() {
         }
     };
 
-    const handleCreateTeam = async (name: string, teamApprovers: string[], approvalMode: "ALL" | "ANY") => {
+    const handleCreateTeam = async (name: string) => {
         try {
             setIsProcessing(true);
 
@@ -121,9 +112,7 @@ export default function TeamsPage() {
 
             await createTeam({
                 name,
-                metadata: {},
-                teamApprovers,
-                approvalMode,
+                metadata: {}
             });
 
             toast({
@@ -159,8 +148,6 @@ export default function TeamsPage() {
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead>Name</TableHead>
-                                <TableHead>Approval Mode</TableHead>
-                                <TableHead>Approver</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -204,8 +191,6 @@ export default function TeamsPage() {
     );
 }
 
-// Rest of the code remains the same...
-
 type TeamItemProps = {
     t: TeamResponse;
     isProcessing: boolean;
@@ -214,29 +199,9 @@ type TeamItemProps = {
 };
 
 function TeamRowItem({t, isProcessing, setSelectedTeamForUpdate, setSelectedTeamForDelete}: TeamItemProps) {
-    const exampleData = [
-        {teamApprover: ['Rozita Hasani', 'Team Admin'], approvalMode: 'ALL'},
-        {teamApprover: ['Team Admin'], approvalMode: 'ANY'},
-    ];
-    const mockData = exampleData[Math.floor(Math.random() * exampleData.length)];
-
     return (
         <TableRow className="hover:bg-gray-50 transition-colors">
             <TableCell>{t.name}</TableCell>
-            <TableCell>
-                <span
-                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                        mockData.approvalMode === "ALL"
-                            ? "bg-green-50 text-green-700 ring-green-600/20"
-                            : "bg-yellow-50 text-yellow-700 ring-yellow-600/20"
-                    }`}
-                >
-                    {mockData.approvalMode === "ALL" ? "All" : "Any"}
-                </span>
-            </TableCell>
-            <TableCell className="space-x-1">
-                {mockData.teamApprover.map((approver) => (<Badge variant='outline'>{approver}</Badge>))}
-            </TableCell>
             <TableCell>
                 <div className="flex items-center space-x-2">
                     <Button
