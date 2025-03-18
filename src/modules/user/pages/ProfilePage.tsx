@@ -120,7 +120,7 @@ export default function ProfilePage() {
                         {/* Avatar Section */}
                         <div className="flex flex-col items-center">
                             <div className="relative">
-                                <UserAvatar avatar={user?.avatar} avatarSize={160}/>
+                                <UserAvatar user={user} size={160}/>
                                 <div
                                     className="absolute bottom-0 right-0 bg-indigo-600 hover:bg-indigo-700 transition-colors p-3 rounded-full shadow-lg">
                                     <label className="cursor-pointer" htmlFor="upload-photo">

@@ -5,7 +5,8 @@ import {UserResponse} from "@/core/types/user.ts";
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 import {UserStatusBadge} from "@/modules/user/components/UserStatusBadge.tsx";
 import {UserRoleBadge} from "@/modules/user/components/UserRoleBadge.tsx";
-import {CalendarIcon, GlobeIcon, MailIcon, PhoneIcon, UsersIcon} from "lucide-react";
+import {CalendarIcon, GlobeIcon, MailIcon, PhoneIcon, TreePalm, UsersIcon} from "lucide-react";
+import dayjs from "dayjs";
 
 type EmployeeDetailsCardProps = {
     employeeDetails: UserResponse | null;
@@ -18,7 +19,7 @@ export default function UserDetailsCard({employeeDetails, leavePolicy}: Employee
             {employeeDetails ? (
                 <Card className="p-4 space-y-6">
                     <div className="flex items-center gap-6">
-                        <UserAvatar avatar={employeeDetails.avatar} avatarSize={64}/>
+                        <UserAvatar user={employeeDetails} size={64}/>
                         <div className="space-y-2">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-xl font-semibold">
@@ -64,8 +65,15 @@ export default function UserDetailsCard({employeeDetails, leavePolicy}: Employee
                         <div className="space-y-1.5">
                             <p className="text-sm font-medium text-muted-foreground">Leave Policy</p>
                             <div className="flex items-center gap-2">
-                                <CalendarIcon className="w-4 h-4 text-muted-foreground"/>
+                                <TreePalm className="w-4 h-4 text-muted-foreground"/>
                                 <p>{leavePolicy?.name}</p>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <p className="text-sm font-medium text-muted-foreground">Start Date</p>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="w-4 h-4 text-muted-foreground"/>
+                                <p>{dayjs(employeeDetails?.joinedAt).format('D MMM YYYY')}</p>
                             </div>
                         </div>
                     </div>

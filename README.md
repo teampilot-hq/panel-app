@@ -1,7 +1,7 @@
-# Teamwize
+# Teampilot
 
 ## Introduction
-Teamwize is an open-source **vacation tracker web application** built for small to medium-sized companies to efficiently manage and track employee time off. Admins can manage leave requests, employee details, and organization settings through a user-friendly interface.
+Teampilot is an open-source **vacation tracker web application** built for small to medium-sized companies to efficiently manage and track employee time off. Admins can manage leave requests, employee details, and organization settings through a user-friendly interface.
 
 ## Features
 - **Organization Management** (Admin Only): Admins can manage organization settings such as company details, week start day, and working days.
@@ -30,16 +30,16 @@ Teamwize is an open-source **vacation tracker web application** built for small 
 
 ## Screenshots
 
-| ![Teamwize Screenshot](public/screenshots/home.png)          | ![Teamwize Screenshot](public/screenshots/balance.png)           |
+| ![Teampilot Screenshot](public/screenshots/home.png)          | ![Teampilot Screenshot](public/screenshots/balance.png)           |
 |--------------------------------------------------------------|------------------------------------------------------------------|
-| ![Teamwize Screenshot](public/screenshots/leave-request.png) | ![Teamwize Screenshot](public/screenshots/official-holidays.png) |
-| ![Teamwize Screenshot](public/screenshots/requests.png)      | ![Teamwize Screenshot](public/screenshots/organization.png)      |
-| ![Teamwize Screenshot](public/screenshots/employees.png)     | ![Teamwize Screenshot](public/screenshots/teams.png)             |
-| ![Teamwize Screenshot](public/screenshots/signup.png)        |                                                                  |
+| ![Teampilot Screenshot](public/screenshots/leave-request.png) | ![Teampilot Screenshot](public/screenshots/official-holidays.png) |
+| ![Teampilot Screenshot](public/screenshots/requests.png)      | ![Teampilot Screenshot](public/screenshots/organization.png)      |
+| ![Teampilot Screenshot](public/screenshots/employees.png)     | ![Teampilot Screenshot](public/screenshots/teams.png)             |
+| ![Teampilot Screenshot](public/screenshots/signup.png)        |                                                                  |
 
 ## Quick Start
 To run the project:
-([link](https://github.com/teamwize/backend?tab=readme-ov-file#getting-started))
+([link](https://github.com/teampilot-hq/backend?tab=readme-ov-file#getting-started))
 
 ## Contributing
 We welcome contributions! To contribute:

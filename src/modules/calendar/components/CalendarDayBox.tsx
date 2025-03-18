@@ -4,6 +4,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import CalendarLeaveItem from "@/modules/calendar/components/CalendarLeaveItem.tsx";
 import {LeaveResponse} from "@/core/types/leave.ts";
 import {Badge} from "@/components/ui/badge.tsx";
+import {LeaveStatus} from "@/core/types/enum.ts";
 
 interface DayBoxProps {
     date: Date;
@@ -17,10 +18,10 @@ interface DayBoxProps {
 
 export const CalendarDayBox: React.FC<DayBoxProps> = ({date, isHoliday, isWeekend, leaves, isSelected, onClick}) => {
     const isToday = dayjs().isSame(date, "day");
+    const filteredLeaves = leaves.filter(leave => leave.status !== LeaveStatus.REJECTED);
 
-
-    const displayedLeaves = leaves.slice(0, 3);
-    const remainingLeavesCount = leaves.length - displayedLeaves.length;
+    const displayedLeaves = filteredLeaves.slice(0, 3);
+    const remainingLeavesCount = filteredLeaves.length - displayedLeaves.length;
 
 
     return (
@@ -59,7 +60,7 @@ export const CalendarDayBox: React.FC<DayBoxProps> = ({date, isHoliday, isWeeken
                         </div>
 
                         <div className="px-2 py-2 max-h-[280px] overflow-y-auto">
-                            {leaves.slice(3).map((leave) => (
+                            {filteredLeaves.slice(3).map((leave) => (
                                 <CalendarLeaveItem leave={leave}/>
                             ))}
                         </div>

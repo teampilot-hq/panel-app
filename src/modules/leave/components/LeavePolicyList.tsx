@@ -12,6 +12,7 @@ import {PageSection} from "@/components/layout/PageSection.tsx";
 import {LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {createLeavesPolicy, deleteLeavePolicy, getLeavesPolicies} from "@/core/services/leaveService.ts";
+import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
 
 export default function LeavePolicyList() {
     const [leavePolicyList, setLeavePolicyList] = useState<LeavePolicyResponse[]>([]);
@@ -177,8 +178,15 @@ function LeavePolicyRowItem({
             <TableCell>
                 <div className="flex flex-wrap gap-2">
                     {leavePolicy.activatedTypes.map((activatedType) => (
-                        <Badge key={activatedType.typeId} variant="outline">
-                            {activatedType.symbol} {activatedType.name}: {activatedType.amount}
+                        <Badge
+                            key={activatedType.typeId}
+                            variant="outline"
+                            className="inline-flex items-center bg-gray-100 text-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium border-none"
+                        >
+                            <span className="mr-1.5 text-base">{activatedType.symbol}</span>
+                            <span className="mr-1">{activatedType.name}:</span>
+                            <span className="font-semibold text-primary">{activatedType.amount}d</span>
+                            <span className="text-gray-500 ml-1">{LeaveTypeCycleJson[activatedType.cycle]}</span>
                         </Badge>
                     ))}
                 </div>

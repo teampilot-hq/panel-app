@@ -34,9 +34,9 @@ export function UserList({
                             className="flex items-center space-x-2 cursor-pointer hover:text-primary transition-colors"
                         >
                             <UserAvatar
-                                avatar={employee?.avatar}
-                                avatarSize={40}
-                                className="border-2 border-muted"
+                                user={employee}
+                                size={46}
+                                className=""
                             />
                             <div className="flex flex-col">
                                 <span
@@ -65,7 +65,6 @@ export function UserList({
                     </TableCell>
                     <TableCell>
                         <UserStatusBadge status={employee.status}/>
-
                     </TableCell>
                     <TableCell>
                         <div className="flex items-center space-x-2">

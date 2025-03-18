@@ -1,6 +1,6 @@
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {BookOpen, Globe, Lock} from 'lucide-react';
+import {Bell, BookOpen, Globe, Lock} from 'lucide-react';
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 
@@ -22,9 +22,15 @@ export default function SettingsPage() {
             color: 'text-blue-600'
         },
         {
+            title: 'Notification',
+            icon: Bell,
+            path: '/notifications',
+            color: 'text-primary'
+        },
+        {
             title: 'Guide',
             icon: BookOpen,
-            path: 'https://github.com/teamwize',
+            path: 'https://github.com/teampilot-hq',
             color: 'text-teal-600',
             external: true
         }

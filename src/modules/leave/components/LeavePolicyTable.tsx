@@ -3,6 +3,8 @@ import {Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableR
 import {Button} from "@/components/ui/button.tsx";
 import {Pencil, Trash} from "lucide-react";
 import React from "react";
+import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
+import {Badge} from "@/components/ui/badge.tsx";
 
 type LeavePolicyTableProps = {
     activatedTypes: LeavePolicyActivatedTypeResponse[];
@@ -27,7 +29,16 @@ export function LeavePolicyTable({onEdit, activatedTypes, onRemove}: LeavePolicy
                     return (
                         <TableRow key={activatedType.typeId}>
                             <TableCell>{activatedType?.name || "Unknown"} {activatedType.symbol}</TableCell>
-                            <TableCell>{activatedType.amount}</TableCell>
+                            <TableCell>
+                                <Badge
+                                    key={activatedType.typeId}
+                                    variant="outline"
+                                    className="inline-flex items-center bg-gray-50 text-gray-700 rounded-lg p-0 text-sm font-medium"
+                                >
+                                    <span className="p-1 px-2 font-semibold text-primary">{activatedType.amount} Days</span>
+                                    <span className="p-1 px-2 border-l  pl-2 text-gray-500 ml-1">{LeaveTypeCycleJson[activatedType.cycle].toUpperCase()}</span>
+                                </Badge>
+                            </TableCell>
                             <TableCell>
                                 <span
                                     className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${

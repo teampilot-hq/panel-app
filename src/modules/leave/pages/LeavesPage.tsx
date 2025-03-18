@@ -206,7 +206,7 @@ function LeaveRow({leave, handleRowClick}: LeaveRowProps) {
     return (
         <TableRow>
             <TableCell className="flex items-center gap-2 font-medium">
-                <UserAvatar avatar={leave.user?.avatar} avatarSize={32}/>
+                <UserAvatar user={leave.user} size={32}/>
                 <span
                     className="cursor-pointer text-sm font-semibold text-blue-600 hover:text-blue-800"
                     onClick={() => viewEmployeeProfile(leave.user.id)}

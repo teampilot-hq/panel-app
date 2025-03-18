@@ -48,8 +48,8 @@ export default function LeaveStatusUpdateDialog({
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <UserAvatar
-                                    avatar={user.avatar}
-                                    avatarSize={64}
+                                    user={user}
+                                    size={64}
                                     className="border-4 border-primary/10 group-hover:border-primary/20 transition-colors"
                                 />
                                 <div className="text-center">

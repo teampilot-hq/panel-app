@@ -27,9 +27,9 @@ export default function CalendarLeaveItem({leave}: CalendarLeaveItemProps) {
         >
             <div className="flex items-center gap-2">
                 <UserAvatar
-                    avatar={leave.user?.avatar}
-                    avatarSize={28}
-                    className="ring-1 ring-white"
+                    user={leave.user}
+                    size={28}
+
                 />
                 <span className="text-xs font-medium">
                     {leave.user.firstName}

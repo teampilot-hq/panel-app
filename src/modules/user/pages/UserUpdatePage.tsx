@@ -18,8 +18,11 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import PageContent from "@/components/layout/PageContent.tsx";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import PageHeader from "@/components/layout/PageHeader.tsx";
-import {UserCog, X} from "lucide-react";
+import {CalendarDays, UserCog, X} from "lucide-react";
 import {UserRole, UserRoleJson} from "@/core/types/enum.ts";
+import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
+import dayjs from "dayjs";
+import {Calendar} from "@/components/ui/calendar.tsx";
 
 const FormSchema = z.object({
     firstName: z.string().min(1, {message: "First Name is required"}),
@@ -29,6 +32,7 @@ const FormSchema = z.object({
     teamId: z.number().positive({message: "Team selection is required"}),
     leavePolicyId: z.number().positive({message: "Leave Policy selection is required"}),
     role: z.nativeEnum(UserRole, {errorMap: () => ({message: "Role is required"})}),
+    joinedAt: z.preprocess((val) => (typeof val === "string" ? new Date(val) : val), z.date({ invalid_type_error: "Start Date is required" }).refine((date) => !isNaN(date.getTime()), { message: "Start Date is required" }))
 });
 
 export default function UserUpdatePage() {
@@ -49,7 +53,8 @@ export default function UserUpdatePage() {
             phone: "",
             teamId: 0,
             leavePolicyId: 0,
-            role: undefined
+            role: undefined,
+            joinedAt: null
         },
     });
 
@@ -68,7 +73,8 @@ export default function UserUpdatePage() {
                     phone: employeeData.phone || "",
                     teamId: employeeData.team.id,
                     leavePolicyId: employeeData.leavePolicy.id,
-                    role: employeeData.role
+                    role: employeeData.role,
+                    joinedAt: new Date(employeeData.joinedAt)
                 });
             } catch (error) {
                 toast({
@@ -109,7 +115,8 @@ export default function UserUpdatePage() {
             phone: data.phone || null,
             teamId: data.teamId,
             leavePolicyId: data.leavePolicyId,
-            role: data.role
+            role: data.role,
+            joinedAt: data.joinedAt.toISOString()
         };
 
         try {
@@ -166,6 +173,7 @@ export default function UserUpdatePage() {
                                         <RoleField form={form}/>
                                         <TeamField form={form} teams={teams}/>
                                         <LeavePolicyField form={form} leavePolicies={leavePolicies}/>
+                                        <StartDate form={form}/>
                                     </div>
                                 </div>
 
@@ -348,6 +356,52 @@ function RoleField({form}: { form: UseFormReturn }) {
                                 ))}
                             </SelectContent>
                         </Select>
+                    </FormControl>
+                    <FormMessage/>
+                </FormItem>
+            )}
+        />
+    );
+}
+
+function StartDate({form}: { form: UseFormReturn }) {
+    const [popoverIsOpen, setPopoverIsOpen] = useState(false);
+
+    return (
+        <FormField
+            control={form.control}
+            name="joinedAt"
+            render={({field}) => (
+                <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                        <Popover open={popoverIsOpen} onOpenChange={setPopoverIsOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={`w-full h-10 hover:bg-white px-3 font-normal ${!field.value ? "border-red-500 text-red-500" : ""}`}
+                                    onClick={() => setPopoverIsOpen(true)}
+                                >
+                                    {field.value ? (
+                                        <span>{dayjs(field.value).format('D MMM YYYY')}</span>
+                                    ) : (
+                                        <span className="text-red-500">Pick a date</span>
+                                    )}
+                                    <CalendarDays className="ml-auto h-4 w-4 opacity-50"/>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto border rounded-lg p-0 shadow-lg bg-white" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={(date) => {
+                                        field.onChange(date || null);
+                                        setPopoverIsOpen(false);
+                                    }}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </FormControl>
                     <FormMessage/>
                 </FormItem>

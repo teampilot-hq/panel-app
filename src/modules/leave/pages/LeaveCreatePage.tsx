@@ -56,6 +56,7 @@ export default function LeaveCreatePage() {
     const [weekendsDays, setWeekendsDays] = useState<string[]>([]);
     const [userLeaves, setUserLeaves] = useState<LeaveResponse[]>([]);
     const [duration, setDuration] = useState<number>(0);
+    const [totalLeaveDays, setTotalLeaveDays] = useState<number>(0);
     const [conflicts, setConflicts] = useState<LeaveResponse[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const {user, organization} = useContext(UserContext);
@@ -149,6 +150,7 @@ export default function LeaveCreatePage() {
                     end: dayjs(endDate).toISOString(),
                 });
                 setDuration(response.duration);
+                setTotalLeaveDays(response.totalDays);
                 setConflicts([...response.yourConflicts, ...response.teamConflicts]);
             } catch (error) {
                 setDuration(null);
@@ -229,16 +231,16 @@ export default function LeaveCreatePage() {
 
     return (
         <>
-            {errorMessage && (
-                <Alert variant="destructive" className="mb-4">
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-            )}
-
             <PageHeader title='Create Leave'/>
             <PageContent>
                 <Card className="mx-auto">
                     <div className="p-6">
+                        {errorMessage && (
+                            <Alert variant="destructive" className="mb-4">
+                                <AlertDescription>{errorMessage}</AlertDescription>
+                            </Alert>
+                        )}
+
                         <Form {...form}>
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                                 <LeaveTypeField form={form} leaveTypes={leaveTypes}/>
@@ -267,7 +269,7 @@ export default function LeaveCreatePage() {
                                     <div className="grid grid-cols-3 gap-4 border p-4 rounded-lg">
                                         <div className="text-center">
                                             <div className="text-sm text-muted-foreground mb-1">Total Days</div>
-                                            <div className="text-2xl font-semibold">{duration}</div>
+                                            <div className="text-2xl font-semibold">{totalLeaveDays}</div>
                                         </div>
                                         <div className="text-center border-x">
                                             <div className="text-sm text-muted-foreground mb-1">Working Days</div>
@@ -276,7 +278,7 @@ export default function LeaveCreatePage() {
                                         <div className="text-center">
                                             <div className="text-sm text-muted-foreground mb-1">Non-Working Days</div>
                                             <div className="text-2xl font-semibold">
-                                                {dayjs(endDate).diff(dayjs(startDate), 'days') + 1 - duration}
+                                                {totalLeaveDays - duration}
                                             </div>
                                         </div>
                                     </div>

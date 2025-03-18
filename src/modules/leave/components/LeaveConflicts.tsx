@@ -32,8 +32,8 @@ export default function LeaveConflicts({conflicts}: LeaveConflictProps) {
                     >
                         <div className="flex items-center gap-2">
                             <UserAvatar
-                                avatar={leave.user?.avatar}
-                                avatarSize={40}
+                                user={leave.user}
+                                size={40}
                             />
                             <span className="text-sm font-medium">{leave.user.firstName} {leave.user.lastName}</span>
                         </div>

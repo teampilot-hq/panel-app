@@ -1,35 +1,41 @@
 import React, {useContext} from "react";
-import {AssetResponse} from "@/core/types/user.ts";
+import {UserResponse} from "@/core/types/user.ts";
 import {UserContext} from "@/contexts/UserContext.tsx";
-import {User} from "lucide-react";
+import UserDefaultAvatar from "@/modules/user/components/UserDefaultAvatar.tsx";
 
 type AvatarProps = {
-    avatar: AssetResponse | null;
-    avatarSize: number;
+    size: number;
     className?: string;
+    user: UserResponse;
 };
 
-export default function UserAvatar({avatar, avatarSize, className}: AvatarProps) {
-    const { accessToken } = useContext(UserContext);
-    const avatarSrc = avatar ? `${avatar.url}?token=${accessToken}` : null;
+export default function UserAvatar({size, className, user}: AvatarProps) {
+    const {accessToken} = useContext(UserContext);
 
     const commonStyles = {
-        height: `${avatarSize}px`,
-        width: `${avatarSize}px`,
+        height: `${size}px`,
+        width: `${size}px`,
         objectFit: 'cover' as const,
         transition: 'all 0.2s ease-in-out'
     };
-
-    if (!avatarSrc) {
+    if(!user) {
         return (
             <div
-                className={`relative inline-flex items-center justify-center border-2 border-gray-300 rounded-full ${className ?? ''}`}
+                className={`relative inline-flex items-center justify-center rounded-full ${className ?? ''}`}
                 style={commonStyles}
             >
-                <User
-                    className="text-gray-300"
-                    size={Math.max(avatarSize)}
-                />
+                <UserDefaultAvatar name={"O"} size={size}/>
+            </div>
+        );
+    }
+
+    if (!user.avatar) {
+        return (
+            <div
+                className={`relative inline-flex items-center justify-center rounded-full ${className ?? ''}`}
+                style={commonStyles}
+            >
+                <UserDefaultAvatar name={user.firstName + " " + user.lastName} size={size}/>
             </div>
         );
     }
@@ -37,15 +43,11 @@ export default function UserAvatar({avatar, avatarSize, className}: AvatarProps)
     return (
         <div className="relative inline-block">
             <img
-                src={avatarSrc}
+                src={`${user.avatar.url}?token=${accessToken}`}
                 alt="User Avatar"
                 className={`rounded-full hover:opacity-90 ${className ?? ''}`}
                 style={commonStyles}
                 loading="lazy"
-                onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'fallback-avatar-url.jpg'; // Add your fallback image URL
-                }}
             />
         </div>
     );
