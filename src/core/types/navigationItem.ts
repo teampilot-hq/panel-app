@@ -35,7 +35,7 @@ export const navigationItems: NavigationItem[] = [
         title: "Leaves",
         path: "/leaves",
         icon: CalendarCheck,
-        description: "Review and manage leave requests, and access user profiles.",
+        description: "Review and manage leave requests, and access users profile.",
         accessLevel: [UserRole.ORGANIZATION_ADMIN, UserRole.TEAM_ADMIN]
     },
     {
@@ -49,21 +49,21 @@ export const navigationItems: NavigationItem[] = [
         title: "Leave Policy",
         path: "/leaves/policies",
         icon: TreePalm,
-        description: "Create and manage custom leave types and policies for your organization.",
+        description: "Create and manage custom leave types and policies.",
         accessLevel: [UserRole.ORGANIZATION_ADMIN]
     },
     {
         title: "Users",
         path: "/users",
         icon: User,
-        description: "Add, edit, or remove users from the organization.",
+        description: "Create and manage users.",
         accessLevel: [UserRole.ORGANIZATION_ADMIN, UserRole.TEAM_ADMIN]
     },
     {
         title: "Teams",
         path: "/teams",
         icon: Users,
-        description: "Add, edit, or remove teams from the organization.",
+        description: "Create and manage teams.",
         accessLevel: [UserRole.ORGANIZATION_ADMIN]
     }
 ]

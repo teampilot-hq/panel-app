@@ -2,6 +2,7 @@ import React, {ReactNode} from "react";
 import {Button} from "@/components/ui/button";
 import {ChevronLeft} from "lucide-react";
 import {useNavigate} from "react-router-dom";
+import {GlobalSearch} from "@/components/GlobalSearch.tsx";
 
 type PageHeaderProps = {
     title: string;
@@ -35,11 +36,10 @@ export default function PageHeader({title, children, backButton}: PageHeaderProp
                         </h1>
                     </div>
 
-                    {children && (
-                        <div className="flex items-center gap-3">
-                            {children}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                        <GlobalSearch />
+                        {children}
+                    </div>
                 </div>
             </div>
         </header>
