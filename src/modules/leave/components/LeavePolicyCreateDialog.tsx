@@ -1,4 +1,3 @@
-import React from "react";
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -9,7 +8,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 
 const FormSchema = z.object({
-    name: z.string().min(2, {message: "Leave policy name must be over 2 characters"}).max(50, {message: "Leave policy name must be under 50 characters"}),
+    name: z.string().min(2, {message: "Leave policy name must be over 2 characters"}).max(50, {message: "Leave policy name must be under 50 characters"})
 });
 
 type PolicyInputs = z.infer<typeof FormSchema>;
@@ -21,10 +20,11 @@ type CreatePolicyDialogProps = {
 };
 
 export function CreatePolicyDialog({isOpen, onClose, onSubmit}: CreatePolicyDialogProps) {
+
     const form = useForm<PolicyInputs>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            name: "",
+            name: ""
         },
     });
 

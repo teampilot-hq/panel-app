@@ -1,20 +1,14 @@
-import React from "react";
 import {useForm} from "react-hook-form";
-import {TeamResponse} from "@/core/types/team.ts";
-import {Button} from "@/components/ui/button.tsx";
+import {Button} from "@/components/ui/button";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Save, X} from "lucide-react";
 
 const FormSchema = z.object({
-    name: z.string().min(2, {
-        message: "Team Name must be over 2 characters"
-    }).max(20, {
-        message: "Team Name must be under 20 characters"
-    }),
+    name: z.string().min(2, {message: "Team name must be at least 2 characters long",}).max(20, {message: "Team name must be under 20 characters",})
 });
 
 type CreateTeamInputs = z.infer<typeof FormSchema>;
@@ -22,15 +16,14 @@ type CreateTeamInputs = z.infer<typeof FormSchema>;
 interface TeamCreateDialogProps {
     onClose: () => void;
     isOpen: boolean;
-    teamList: TeamResponse[];
-    onSubmit: (name: string) => void;
+    onSubmit: (name: string,) => void;
 }
 
-export default function TeamCreateDialog({isOpen, onClose, onSubmit, teamList}: TeamCreateDialogProps) {
+export default function TeamCreateDialog({isOpen, onClose, onSubmit}: TeamCreateDialogProps) {
     const form = useForm<CreateTeamInputs>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            name: "",
+            name: ""
         },
     });
 
@@ -53,9 +46,9 @@ export default function TeamCreateDialog({isOpen, onClose, onSubmit, teamList}: 
                             name="name"
                             render={({field}) => (
                                 <FormItem>
-                                    <FormLabel>Name</FormLabel>
+                                    <FormLabel>Team Name</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Name" {...field} />
+                                        <Input placeholder="Enter team name" {...field} />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -69,7 +62,7 @@ export default function TeamCreateDialog({isOpen, onClose, onSubmit, teamList}: 
                             </Button>
                             <Button type="submit">
                                 <Save className="w-4 h-4 mr-2"/>
-                                Create
+                                Create Team
                             </Button>
                         </DialogFooter>
                     </form>

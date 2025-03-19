@@ -13,7 +13,7 @@ export enum UserRole {
 }
 
 export enum UserRoleJson {
-    ORGANIZATION_ADMIN = "Admin",
+    ORGANIZATION_ADMIN = "Organization Admin",
     EMPLOYEE = "Employee",
     TEAM_ADMIN = "Team Admin"
 }
