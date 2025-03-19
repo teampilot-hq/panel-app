@@ -40,7 +40,7 @@ export default function LeavePolicyList() {
         fetchLeavePolicies();
     }, []);
 
-    const createLeavePolicy = async (name: string, teamApprover: string[], approvalMode: ApprovalMode) => {
+    const createLeavePolicy = async (name: string) => {
         try {
             setIsProcessing(true);
             setIsCreateDialogOpen(false);
@@ -49,8 +49,8 @@ export default function LeavePolicyList() {
                 name: name,
                 status: LeavePolicyStatus.ACTIVE,
                 activatedTypes: [],
-                teamApprovers: teamApprover,
-                approvalMode: approvalMode
+                teamApprovers: [],
+                approvalMode: ApprovalMode.ALL,
             });
 
             toast({
@@ -144,7 +144,7 @@ export default function LeavePolicyList() {
                 <CreatePolicyDialog
                     isOpen={isCreateDialogOpen}
                     onClose={() => setIsCreateDialogOpen(false)}
-                    onSubmit={(name, teamApprover, approvalMode) => createLeavePolicy(name, teamApprover, approvalMode)}
+                    onSubmit={(name) => createLeavePolicy(name )}
                 />
 
                 {isDeleteDialogOpen && selectedLeavePolicy && (
