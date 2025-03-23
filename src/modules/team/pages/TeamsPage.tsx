@@ -12,6 +12,17 @@ import {DeleteModal} from "@/modules/team/components/TeamDeleteDialog.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import TeamCreateDialog from "@/modules/team/components/TeamCreateDialog.tsx";
+import {z} from "zod";
+
+const FormSchema = z.object({
+    name: z.string().min(2, {
+        message: "Team name must be at least 2 characters long",
+    }).max(20, {
+        message: "Team name must be under 20 characters",
+    })
+});
+
+type UpdateTeamInputs = z.infer<typeof FormSchema>;
 
 export default function TeamsPage() {
     const [teamList, setTeamList] = useState<TeamResponse[]>([]);
@@ -21,22 +32,21 @@ export default function TeamsPage() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     useEffect(() => {
-        const fetchTeams = async () => {
-            try {
-                const response = await getTeams();
-                setTeamList(response);
-            } catch (error) {
-                const errorMessage = getErrorMessage(error as Error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            }
-        };
-
         fetchTeams();
     }, []);
+
+    const fetchTeams = async () => {
+        try {
+            const response = await getTeams();
+            setTeamList(response);
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: getErrorMessage(error as Error),
+                variant: "destructive",
+            });
+        }
+    };
 
     const handleRemoveTeam = async () => {
         if (!selectedTeamForDelete) return;
@@ -44,17 +54,16 @@ export default function TeamsPage() {
         setIsProcessing(true);
         try {
             await deleteTeam(selectedTeamForDelete.id);
-            setTeamList(teamList.filter((team) => team.id !== selectedTeamForDelete.id));
+            setTeamList((prev) => prev.filter((team) => team.id !== selectedTeamForDelete.id));
             toast({
                 title: "Success",
-                description: "team removed successfully!",
+                description: "Team removed successfully!",
                 variant: "default",
             });
         } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
             toast({
                 title: "Error",
-                description: errorMessage,
+                description: getErrorMessage(error as Error),
                 variant: "destructive",
             });
         } finally {
@@ -63,27 +72,36 @@ export default function TeamsPage() {
         }
     };
 
-    const handleUpdateSuccess = async () => {
+    const handleUpdateTeam = async (data: UpdateTeamInputs, teamId: number) => {
         try {
-            const response = await getTeams();
-            setTeamList(response);
+            await updateTeam(
+                {
+                    name: data.name,
+                    metadata: {},
+                },
+                teamId
+            );
+            await fetchTeams();
+            toast({
+                title: "Success",
+                description: "Team updated successfully!",
+                variant: "default",
+            });
+            setSelectedTeamForUpdate(null);
         } catch (error) {
             toast({
                 title: "Error",
-                description: "Failed to refresh team list",
+                description: getErrorMessage(error as Error),
                 variant: "destructive",
             });
         }
     };
 
-    const createOrganizationTeam = async (name: string) => {
+    const handleCreateTeam = async (name: string) => {
         try {
             setIsProcessing(true);
-            setIsCreateDialogOpen(false);
 
-            // Check if the team name already exists
-            const exists = teamList.some((t) => t.name === name);
-            if (exists) {
+            if (teamList.some((t) => t.name === name)) {
                 toast({
                     title: "Error",
                     description: "A team with this name already exists.",
@@ -93,8 +111,8 @@ export default function TeamsPage() {
             }
 
             await createTeam({
-                name: name,
-                metadata: {},
+                name,
+                metadata: {}
             });
 
             toast({
@@ -103,10 +121,7 @@ export default function TeamsPage() {
                 variant: "default",
             });
 
-            // Refresh team list after creation
-            const updatedTeams = await getTeams();
-            setTeamList(updatedTeams);
-
+            await fetchTeams();
         } catch (error) {
             toast({
                 title: "Error",
@@ -115,14 +130,15 @@ export default function TeamsPage() {
             });
         } finally {
             setIsProcessing(false);
+            setIsCreateDialogOpen(false);
         }
     };
 
     return (
         <>
-            <PageHeader title='Teams'>
+            <PageHeader title="Teams">
                 <Button className="px-2 h-9" onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1"/>
+                    <Plus className="h-4 w-4 mr-1" />
                     Create
                 </Button>
             </PageHeader>
@@ -151,17 +167,14 @@ export default function TeamsPage() {
                     <TeamCreateDialog
                         isOpen={isCreateDialogOpen}
                         onClose={() => setIsCreateDialogOpen(false)}
-                        teamList={teamList}
-                        onSubmit={(name) => createOrganizationTeam(name)}
+                        onSubmit={handleCreateTeam}
                     />
 
                     {selectedTeamForUpdate && (
                         <TeamUpdateDialog
-                            teamId={selectedTeamForUpdate.id}
-                            teamName={selectedTeamForUpdate.name}
+                            team={selectedTeamForUpdate}
                             onClose={() => setSelectedTeamForUpdate(null)}
-                            onSuccess={handleUpdateSuccess}
-                            updateTeam={updateTeam}
+                            onSubmit={handleUpdateTeam}
                         />
                     )}
 
@@ -185,7 +198,7 @@ type TeamItemProps = {
     setSelectedTeamForDelete: (team: TeamResponse | null) => void;
 };
 
-function TeamRowItem({ t, isProcessing, setSelectedTeamForUpdate, setSelectedTeamForDelete }: TeamItemProps) {
+function TeamRowItem({t, isProcessing, setSelectedTeamForUpdate, setSelectedTeamForDelete}: TeamItemProps) {
     return (
         <TableRow className="hover:bg-gray-50 transition-colors">
             <TableCell>{t.name}</TableCell>

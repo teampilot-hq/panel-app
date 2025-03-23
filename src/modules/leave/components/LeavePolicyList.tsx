@@ -9,7 +9,7 @@ import {Badge} from "@/components/ui/badge";
 import {NavigateFunction, useNavigate} from "react-router-dom";
 import {CreatePolicyDialog} from "@/modules/leave/components/LeavePolicyCreateDialog.tsx";
 import {PageSection} from "@/components/layout/PageSection.tsx";
-import {LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
+import {ApprovalMode, LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {createLeavesPolicy, deleteLeavePolicy, getLeavesPolicies} from "@/core/services/leaveService.ts";
 import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
@@ -49,6 +49,8 @@ export default function LeavePolicyList() {
                 name: name,
                 status: LeavePolicyStatus.ACTIVE,
                 activatedTypes: [],
+                teamApprovers: [],
+                approvalMode: ApprovalMode.ALL,
             });
 
             toast({
@@ -120,6 +122,8 @@ export default function LeavePolicyList() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Types</TableHead>
+                            <TableHead>Approval Mode</TableHead>
+                            <TableHead>Approver</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -140,7 +144,7 @@ export default function LeavePolicyList() {
                 <CreatePolicyDialog
                     isOpen={isCreateDialogOpen}
                     onClose={() => setIsCreateDialogOpen(false)}
-                    onSubmit={(name) => createLeavePolicy(name)}
+                    onSubmit={(name) => createLeavePolicy(name )}
                 />
 
                 {isDeleteDialogOpen && selectedLeavePolicy && (
@@ -172,6 +176,12 @@ function LeavePolicyRowItem({
                                 setIsDeleteDialogOpen,
                                 isProcessing,
                             }: LeavePolicyRowItemProps) {
+    const exampleData = [
+        {teamApprover: ['Rozita Hasani', 'Team Admin'], approvalMode: ApprovalMode.ALL},
+        {teamApprover: ['Team Admin'], approvalMode: ApprovalMode.ANY},
+    ];
+    const mockData = exampleData[Math.floor(Math.random() * exampleData.length)];
+
     return (
         <TableRow key={leavePolicy.id}>
             <TableCell>{leavePolicy.name}</TableCell>
@@ -191,6 +201,22 @@ function LeavePolicyRowItem({
                     ))}
                 </div>
             </TableCell>
+
+            <TableCell>
+                <span
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                        mockData.approvalMode === ApprovalMode.ALL
+                            ? "bg-green-50 text-green-700 ring-green-600/20"
+                            : "bg-yellow-50 text-yellow-700 ring-yellow-600/20"
+                    }`}
+                >
+                    {mockData.approvalMode === ApprovalMode.ALL ? ApprovalMode.ALL : ApprovalMode.ANY}
+                </span>
+            </TableCell>
+            <TableCell className="space-x-1 space-y-1">
+                {mockData.teamApprover.map((approver) => (<Badge variant='outline'>{approver}</Badge>))}
+            </TableCell>
+
             <TableCell className="text-right">
                 <div className="flex gap-2">
                     <Button

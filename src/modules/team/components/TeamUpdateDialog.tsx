@@ -1,45 +1,36 @@
-import React, {useState} from "react";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {TeamCreateRequest, TeamResponse} from "@/core/types/team.ts";
+import {TeamResponse} from "@/core/types/team.ts";
 import {Save, X} from "lucide-react";
-
-type UpdateTeamDialogProps = {
-    teamId: number;
-    teamName: string;
-    onClose: () => void;
-    onSuccess: () => void;
-    updateTeam: (data: TeamCreateRequest, id: number) => Promise<TeamResponse>;
-};
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 
 const FormSchema = z.object({
-    name: z.string().min(2, {message: "team Name must be over 2 characters"}).max(20, {
-        message: "team Name must be under 20 characters",
-    }),
+    name: z.string().min(2, {
+        message: "Team name must be at least 2 characters long",
+    }).max(20, {
+        message: "Team name must be under 20 characters",
+    })
 });
 
-export default function TeamUpdateDialog({teamId, teamName, onClose, onSuccess, updateTeam}: UpdateTeamDialogProps) {
-    const [isProcessing, setIsProcessing] = useState(false);
+type UpdateTeamInputs = z.infer<typeof FormSchema>;
 
-    const form = useForm<z.infer<typeof FormSchema>>({
+interface TeamUpdateDialogProps {
+    team: TeamResponse;
+    onClose: () => void;
+    onSubmit: (data: UpdateTeamInputs, teamId: number) => void;
+}
+
+export default function TeamUpdateDialog({team, onClose, onSubmit}: TeamUpdateDialogProps) {
+    const form = useForm<UpdateTeamInputs>({
         resolver: zodResolver(FormSchema),
-        defaultValues: {name: teamName},
+        defaultValues: {
+            name: team.name || ''
+        },
     });
-
-    const handleSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            setIsProcessing(true);
-            await updateTeam({name: data.name, metadata: {}}, teamId);
-            onSuccess();
-            onClose();
-        } catch (error) {
-            setIsProcessing(false);
-        }
-    };
 
     return (
         <Dialog open={true} onOpenChange={onClose}>
@@ -47,23 +38,35 @@ export default function TeamUpdateDialog({teamId, teamName, onClose, onSuccess, 
                 <DialogHeader>
                     <DialogTitle>Update Team</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Name</label>
-                        <Input {...form.register("name")} />
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={onClose} type="button" variant="outline"
-                                className="mr-2">
-                            <X className="w-4 h-4 mr-2"/>
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isProcessing}>
-                            <Save className="w-4 h-4 mr-2"/>
-                            {isProcessing ? "Updating..." : "Update"}
-                        </Button>
-                    </DialogFooter>
-                </form>
+
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit((data) => onSubmit(data, team.id))} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Team Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Enter team name" {...field} />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+
+                        <DialogFooter>
+                            <Button onClick={onClose} type="button" variant="secondary" className="mr-2">
+                                <X className="w-4 h-4 mr-2"/>
+                                Cancel
+                            </Button>
+                            <Button type="submit">
+                                <Save className="w-4 h-4 mr-2"/>
+                                Update Team
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
