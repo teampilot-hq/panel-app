@@ -8,7 +8,7 @@ import {
 import {Button} from "@/components/ui/button.tsx";
 import {Check, Ellipsis, X} from "lucide-react";
 import React, {useContext, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {
     Dialog,
@@ -23,10 +23,9 @@ import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 
 type AccountDropdownProps = {
     isActive: boolean;
-    onClick: (name: string) => void;
 };
 
-export default function SidebarAccountDropdown({isActive, onClick}: AccountDropdownProps) {
+export default function SidebarAccountDropdown({isActive}: AccountDropdownProps) {
     const [signOut, setSignOut] = useState<boolean>(false);
     const navigate = useNavigate();
     const {user} = useContext(UserContext);
@@ -35,12 +34,8 @@ export default function SidebarAccountDropdown({isActive, onClick}: AccountDropd
         navigate("/profile");
     };
 
-    const handleDropdownClick = () => {
-        onClick("profile");
-    };
-
     return (
-        <div className='p-4' onClick={handleDropdownClick}>
+        <Link className='p-4' to={"profile"}>
             <DropdownMenu>
                 <DropdownMenuTrigger className="w-full">
                     <div
@@ -65,7 +60,7 @@ export default function SidebarAccountDropdown({isActive, onClick}: AccountDropd
             </DropdownMenu>
 
             {signOut && <SignOut signOut={signOut} setSignOut={setSignOut}/>}
-        </div>
+        </Link>
     )
 }
 
