@@ -16,7 +16,6 @@ import {UserCreateRequest} from "@/core/types/user.ts";
 import {TeamResponse} from "@/core/types/team.ts";
 import {country} from "@/core/types/country.ts";
 import {UserContext} from "@/contexts/UserContext";
-import {getLeavesPolicies} from "@/core/services/leaveService.ts";
 import {LeavePolicyResponse} from "@/core/types/leave.ts";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
@@ -25,6 +24,7 @@ import {UserRole, UserRoleJson} from "@/core/types/enum.ts";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import { Calendar } from "@/components/ui/calendar"
 import dayjs from "dayjs";
+import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(2, { message: "First Name must be over 2 characters" }).max(20, { message: "First Name must be under 20 characters" }),
@@ -46,6 +46,8 @@ export default function UserCreatePage() {
     const [leavePolicies, setLeavePolicies] = useState<LeavePolicyResponse[]>([]);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
+    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
@@ -65,9 +67,8 @@ export default function UserCreatePage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [teamData, policyData] = await Promise.all([getTeams(), getLeavesPolicies()]);
+                const [teamData] = await Promise.all([getTeams()]);
                 setTeams(teamData);
-                setLeavePolicies(policyData);
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             }
@@ -150,7 +151,7 @@ export default function UserCreatePage() {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <RoleField form={form}/>
                                         <TeamField form={form} teams={teams}/>
-                                        <LeavePolicyField form={form} leavePolicies={leavePolicies}/>
+                                        <LeavePolicyField form={form} leavePolicies={leavesPolicies}/>
                                         <StartDate form={form}/>
                                     </div>
                                 </div>
@@ -329,7 +330,7 @@ function LeavePolicyField({form, leavePolicies}: FieldProps) {
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a leave policy" />
                             </SelectTrigger>
-                            <SelectContent>{leavePolicies.map((leavePolicy) => (<SelectItem key={leavePolicy.id} value={leavePolicy.id.toString()}>{leavePolicy.name}</SelectItem>))}</SelectContent>
+                            <SelectContent>{leavePolicies?.map((leavePolicy) => (<SelectItem key={leavePolicy.id} value={leavePolicy.id.toString()}>{leavePolicy.name}</SelectItem>))}</SelectContent>
                         </Select>
                     </FormControl>
                     <FormMessage />

@@ -4,13 +4,13 @@ import {CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, Co
 import {Search, TreePalm} from 'lucide-react'
 import {Button} from './ui/button'
 import {getUsers} from '@/core/services/userService'
-import {getLeavesPolicies} from '@/core/services/leaveService'
 import {UserResponse} from '@/core/types/user'
 import {LeavePolicyResponse} from '@/core/types/leave'
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {getAccessibleNavigationItems} from "@/core/utils/navigation.ts";
 import {UserRole} from "@/core/types/enum.ts";
+import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 export function GlobalSearch() {
     const [open, setOpen] = useState(false)
@@ -22,15 +22,15 @@ export function GlobalSearch() {
     const {user} = useContext(UserContext);
     const accessibleItems = user ? getAccessibleNavigationItems(user.role) : [];
 
+    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+
     const fetchData = useCallback(async () => {
         try {
             setLoading(true)
-            const [usersData, policiesData] = await Promise.all([
+            const [usersData] = await Promise.all([
                 getUsers(0, 100),
-                getLeavesPolicies()
             ])
             setUsers(usersData.contents)
-            setPolicies(policiesData)
         } catch (error) {
             console.error('Error fetching data:', error)
         } finally {
@@ -58,15 +58,15 @@ export function GlobalSearch() {
         );
     });
 
-    const filteredPolicies = policies.filter(policy => {
+    const filteredPolicies = leavesPolicies?.filter(policy => {
         if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return policy.name.toLowerCase().includes(searchLower);
     });
 
-    const visibleUsers = searchTerm ? filteredUsers : filteredUsers.slice(0, 10);
-    const visiblePolicies = searchTerm ? filteredPolicies : filteredPolicies.slice(0, 10);
-    const visiblePages = searchTerm ? accessibleItems : accessibleItems.slice(0, 5);
+    const visibleUsers = searchTerm ? filteredUsers : filteredUsers?.slice(0, 10);
+    const visiblePolicies = searchTerm ? filteredPolicies : filteredPolicies?.slice(0, 10);
+    const visiblePages = searchTerm ? accessibleItems : accessibleItems?.slice(0, 5);
 
     return (
         <>
@@ -128,7 +128,7 @@ export function GlobalSearch() {
 
                                     <CommandGroup heading="Leave Policies" className="p-2">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-auto">
-                                        {visiblePolicies.map((policy) => (
+                                        {visiblePolicies?.map((policy) => (
                                             <CommandItem
                                                 key={policy.id}
                                                 onSelect={() => onSelect(`/leaves/policies/${policy.id}`)}

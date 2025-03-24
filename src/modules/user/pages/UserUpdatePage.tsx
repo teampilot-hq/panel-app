@@ -5,7 +5,6 @@ import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {toast} from "@/components/ui/use-toast";
 import {getTeams} from "@/core/services/teamService";
-import {getLeavesPolicies} from "@/core/services/leaveService";
 import {getUser, updateUser} from "@/core/services/userService";
 import {TeamResponse} from "@/core/types/team.ts";
 import {LeavePolicyResponse} from "@/core/types/leave.ts";
@@ -23,6 +22,7 @@ import {UserRole, UserRoleJson} from "@/core/types/enum.ts";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import dayjs from "dayjs";
 import {Calendar} from "@/components/ui/calendar.tsx";
+import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(1, {message: "First Name is required"}),
@@ -43,6 +43,8 @@ export default function UserUpdatePage() {
     const [leavePolicies, setLeavePolicies] = useState<LeavePolicyResponse[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const location = useLocation();
+
+    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -92,9 +94,8 @@ export default function UserUpdatePage() {
     useEffect(() => {
         const fetchMetadata = async () => {
             try {
-                const [teamData, policyData] = await Promise.all([getTeams(), getLeavesPolicies()]);
+                const [teamData] = await Promise.all([getTeams()]);
                 setTeams(teamData);
-                setLeavePolicies(policyData);
             } catch (error) {
                 toast({
                     title: "Error",
@@ -172,7 +173,7 @@ export default function UserUpdatePage() {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <RoleField form={form}/>
                                         <TeamField form={form} teams={teams}/>
-                                        <LeavePolicyField form={form} leavePolicies={leavePolicies}/>
+                                        <LeavePolicyField form={form} leavePolicies={leavesPolicies}/>
                                         <StartDate form={form}/>
                                     </div>
                                 </div>

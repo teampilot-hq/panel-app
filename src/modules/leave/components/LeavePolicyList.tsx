@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useState} from "react";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
@@ -13,6 +13,7 @@ import {LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {createLeavesPolicy, deleteLeavePolicy, getLeavesPolicies} from "@/core/services/leaveService.ts";
 import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
+import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function LeavePolicyList() {
     const [leavePolicyList, setLeavePolicyList] = useState<LeavePolicyResponse[]>([]);
@@ -22,23 +23,7 @@ export default function LeavePolicyList() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const navigate = useNavigate();
 
-    // Fetch leave policies
-    useEffect(() => {
-        const fetchLeavePolicies = async () => {
-            try {
-                const policies = await getLeavesPolicies();
-                setLeavePolicyList(policies);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: getErrorMessage(error as Error),
-                    variant: "destructive",
-                });
-            }
-        };
-
-        fetchLeavePolicies();
-    }, []);
+    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
 
     const createLeavePolicy = async (name: string) => {
         try {
@@ -124,7 +109,7 @@ export default function LeavePolicyList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {leavePolicyList.map((leavePolicy) => (
+                        {leavesPolicies?.map((leavePolicy) => (
                             <LeavePolicyRowItem
                                 key={leavePolicy.id}
                                 leavePolicy={leavePolicy}
