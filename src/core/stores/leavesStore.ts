@@ -21,11 +21,12 @@ export function useCreateLeave() {
     });
 }
 
-export function useUpdateLeaveStatus(payload: LeaveUpdateRequest, id: number) {
+export function useUpdateLeaveStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: () => updateLeavesStatus(payload, id),
+        mutationFn: ({payload, id}: {payload: LeaveUpdateRequest, id: number}) =>
+            updateLeavesStatus(payload, id),
         onSuccess: (data) => {
             queryClient.invalidateQueries({queryKey: ['leaves']});
             queryClient.setQueryData(['leave', data.id], data);

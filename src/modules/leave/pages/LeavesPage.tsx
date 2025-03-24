@@ -2,7 +2,6 @@ import React, {useContext, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {updateLeavesStatus} from "@/core/services/leaveService.ts";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {LeaveStatus, UserRole} from '@/core/types/enum.ts';
@@ -24,7 +23,7 @@ import {getTeams} from "@/core/services/teamService.ts";
 import {TeamResponse} from "@/core/types/team.ts";
 import LeaveStatusBadge from "@/modules/leave/components/LeaveStatusBadge.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
-import {useLeaves} from "@/core/stores/leavesStore.ts";
+import { useLeaves, useUpdateLeaveStatus} from "@/core/stores/leavesStore.ts";
 
 export default function LeavesPage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -41,6 +40,7 @@ export default function LeavesPage() {
     });
 
     const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves(filters, currentPage);
+    const updateLeaveStatusMutation = useUpdateLeaveStatus();
 
     const fetchUsers = async () => {
         try {
@@ -91,26 +91,23 @@ export default function LeavesPage() {
     };
 
     // Handle leave request approval or rejection
-    const handleRequest = async (status: LeaveStatus, id: number) => {
-        try {
-            setIsProcessing(true);
-            await updateLeavesStatus({status}, id);
-            toast({
-                title: "Success",
-                description: `Request ${status.toLowerCase()} successfully.`,
-                variant: "default",
-            });
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-            setSelectedLeave(null);
-        }
+    const handleRequest = (status: LeaveStatus, id: number) => {
+        setIsProcessing(true);
+        updateLeaveStatusMutation.mutate(
+            { payload: {status}, id },
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: `Request ${status.toLowerCase()} successfully.`, variant: "default"});
+                    setIsProcessing(false);
+                    setSelectedLeave(null);
+                },
+                onError: (error) => {
+                    const errorMessage = getErrorMessage(error as Error | string);
+                    toast({title: "Error", description: errorMessage, variant: "destructive"});
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (
