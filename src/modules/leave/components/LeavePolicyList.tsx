@@ -11,12 +11,10 @@ import {CreatePolicyDialog} from "@/modules/leave/components/LeavePolicyCreateDi
 import {PageSection} from "@/components/layout/PageSection.tsx";
 import {LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {deleteLeavePolicy} from "@/core/services/leaveService.ts";
 import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
-import {useCreateLeavesPolicy, useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
+import {useCreateLeavesPolicy, useDeleteLeavePolicy, useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function LeavePolicyList() {
-    const [leavePolicyList, setLeavePolicyList] = useState<LeavePolicyResponse[]>([]);
     const [selectedLeavePolicy, setSelectedLeavePolicy] = useState<LeavePolicyResponse | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -25,6 +23,7 @@ export default function LeavePolicyList() {
 
     const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
     const createLeavePolicyMutation = useCreateLeavesPolicy();
+    const deleteLeavePolicyMutation = useDeleteLeavePolicy();
 
     const createLeavePolicy = async (name: string) => {
         setIsCreateDialogOpen(false);
@@ -48,33 +47,25 @@ export default function LeavePolicyList() {
         });
     };
 
-    const handleRemoveLeavePolicy = async () => {
+    const handleRemoveLeavePolicy = () => {
         if (!selectedLeavePolicy) return;
 
-        try {
-            setIsProcessing(true);
+        setIsProcessing(true);
+        setIsDeleteDialogOpen(false);
 
-            await deleteLeavePolicy(selectedLeavePolicy.id);
-
-            // Update the policy list locally
-            setLeavePolicyList((prev) => prev.filter((policy) => policy.id !== selectedLeavePolicy.id));
-
-            toast({
-                title: "Success",
-                description: "leave policy removed successfully!",
-                variant: "default",
-            });
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-            setSelectedLeavePolicy(null);
-            setIsDeleteDialogOpen(false);
-        }
+        deleteLeavePolicyMutation.mutate(selectedLeavePolicy.id, {
+            onSuccess: () => {
+                setIsProcessing(false);
+                setSelectedLeavePolicy(null);
+                toast({title: "Success", description: "Leave policy removed successfully.", variant: "default"});
+                navigate("/leaves/policies");
+            },
+            onError: (error) => {
+                setIsProcessing(false);
+                const errorMessage = getErrorMessage(error as Error | string);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
+            }
+        });
     };
 
     return (

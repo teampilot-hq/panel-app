@@ -29,7 +29,7 @@ export function useCreateLeavesPolicy() {
     return useMutation({
         mutationFn: (payload: LeavePolicyCreateRequest) => createLeavesPolicy(payload),
         onSuccess: (data) => {
-            queryClient.invalidateQueries({queryKey: ['leavesPolicy']});
+            queryClient.invalidateQueries({queryKey: ['leavesPolicies']});
             queryClient.setQueryData(['leavesPolicy', data.id], data);
         },
     });
@@ -44,19 +44,19 @@ export function useUpdateLeavePolicy() {
             id: number
         }) => updateLeavePolicy(payload, id),
         onSuccess: (data) => {
-            queryClient.invalidateQueries({queryKey: ['leavesPolicy']});
+            queryClient.invalidateQueries({queryKey: ['leavesPolicies']});
             queryClient.setQueryData(['leavesPolicy', data.id], data);
         },
     });
 }
 
-export function useDeleteLeavePolicy(id: number) {
+export function useDeleteLeavePolicy() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: (id: number) => deleteLeavePolicy(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['leavesPolicy']});
+        onSuccess: (id) => {
+            queryClient.invalidateQueries({queryKey: ['leavesPolicies']});
             queryClient.removeQueries({queryKey: ['leavesPolicy', id]});
         },
     });
