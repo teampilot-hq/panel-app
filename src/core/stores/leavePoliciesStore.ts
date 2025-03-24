@@ -9,10 +9,11 @@ export function useLeavesPolicies() {
     })
 }
 
-export function useLeavesPolicy(id: number) {
+export function useLeavesPolicy(policyId: number | null) {
     return useQuery({
-        queryKey: ['leavesPolicy', id],
-        queryFn: ()=> getLeavesPolicy(id),
+        queryKey: ['leavesPolicy', policyId],
+        queryFn: ()=> getLeavesPolicy(policyId),
+        enabled: !!policyId,
     })
 }
 

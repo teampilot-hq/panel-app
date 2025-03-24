@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {useLocation, useNavigate} from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import {createLeavesCheck, getLeavesPolicy} from "@/core/services/leaveService.ts";
+import {createLeavesCheck} from "@/core/services/leaveService.ts";
 import {getErrorMessage} from '@/core/utils/errorHandler.ts';
 import DatePicker from '@/modules/leave/components/DatePicker';
 import {Alert, AlertDescription} from '@/components/ui/alert';
@@ -26,6 +26,7 @@ import PageContent from "@/components/layout/PageContent.tsx";
 import LeaveConflicts from "@/modules/leave/components/LeaveConflicts.tsx";
 import {Send, X} from "lucide-react";
 import {useCreateLeave} from "@/core/stores/leavesStore.ts";
+import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
 
 /*
 1.Fetch LeavePolicyType name and id from leaves/policies
@@ -67,6 +68,13 @@ export default function LeaveCreatePage() {
     };
 
     const createLeaveMutation = useCreateLeave();
+    const {data : leavesPolicy} = useLeavesPolicy(user?.leavePolicy?.id);
+
+    useEffect(() => {
+        if (leavesPolicy?.activatedTypes) {
+            setLeaveTypes(leavesPolicy.activatedTypes);
+        }
+    }, [leavesPolicy]);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -82,32 +90,6 @@ export default function LeaveCreatePage() {
     const startDate = watch('startDate');
     const endDate = watch('endDate');
     const leaveCategory = watch("leaveCategory");
-
-    // Fetch leave policies
-    const fetchLeavePolicies = async () => {
-        try {
-            if (!user || !user.leavePolicy?.id) {
-                console.log("User or user.leavePolicy.id is not available");
-                return
-            }
-            const userPolicy = await getLeavesPolicy(user?.leavePolicy?.id);
-            if (userPolicy) {
-                const types = userPolicy.activatedTypes;
-                setLeaveTypes(types);
-            } else {
-                console.log("No matching policy found for the user.");
-            }
-        } catch (error) {
-            console.log("Fetching leave Policy", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    };
 
     // Fetch holidays
     const fetchHolidays = async () => {
@@ -194,7 +176,6 @@ export default function LeaveCreatePage() {
 
     // Fetch leave types, holidays, and user's leaves on mount
     useEffect(() => {
-        fetchLeavePolicies();
         fetchHolidays();
 
         if (organization?.workingDays) {

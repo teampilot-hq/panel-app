@@ -5,7 +5,7 @@ import {Card, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Pencil, Plus, Save, X} from "lucide-react";
 import {toast} from "@/components/ui/use-toast";
-import {getLeavesPolicy, getLeavesTypes, updateLeavePolicy,} from "@/core/services/leaveService";
+import {getLeavesTypes, updateLeavePolicy,} from "@/core/services/leaveService";
 import LeavePolicyActivatedTypeUpdateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeUpdateDialog.tsx";
 import {
     LeavePolicyActivatedTypeResponse,
@@ -18,6 +18,7 @@ import {LeavePolicyTable} from "@/modules/leave/components/LeavePolicyTable.tsx"
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import LeavePolicyActivatedTypeCreateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeCreateDialog.tsx";
+import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function LeavePolicyUpdatePage() {
     const {id} = useParams();
@@ -29,23 +30,7 @@ export default function LeavePolicyUpdatePage() {
     const [isEditingName, setIsEditingName] = useState(false);
     const navigate = useNavigate();
 
-    // Fetch Leave Policy
-    useEffect(() => {
-        const fetchLeavePolicy = async () => {
-            try {
-                const policy = await getLeavesPolicy(Number(id));
-                setLeavePolicy(policy);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: getErrorMessage(error as Error | string),
-                    variant: "destructive",
-                });
-            }
-        };
-
-        fetchLeavePolicy();
-    }, [id]);
+    const {data : leavesPolicy} = useLeavesPolicy(Number(id));
 
     // Fetch leave Types
     useEffect(() => {
@@ -67,7 +52,7 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Policy Name Change
     const savePolicyName = async () => {
-        if (!leavePolicy) return;
+        if (!leavesPolicy) return;
 
         const updatedName = leavePolicy.name;
 
@@ -86,7 +71,7 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Add Leave Type
     const addLeaveType = (newType: LeavePolicyActivatedTypeResponse) => {
-        if (!leavePolicy) return;
+        if (!leavesPolicy) return;
 
         setLeavePolicy({
             ...leavePolicy,
@@ -98,7 +83,7 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Update Leave Type
     const updateLeaveType = (updatedType: LeavePolicyActivatedTypeResponse) => {
-        if (!leavePolicy) return;
+        if (!leavesPolicy) return;
 
         setLeavePolicy({
             ...leavePolicy,
@@ -113,7 +98,7 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Remove Leave Type
     const removeLeaveType = (typeId: number) => {
-        if (!leavePolicy) return;
+        if (!leavesPolicy) return;
 
         setLeavePolicy({
             ...leavePolicy,
@@ -123,7 +108,7 @@ export default function LeavePolicyUpdatePage() {
 
     // Save Final Changes
     const savePolicy = async () => {
-        if (!leavePolicy) return;
+        if (!leavesPolicy) return;
 
         try {
             await updateLeavePolicy(
@@ -164,7 +149,7 @@ export default function LeavePolicyUpdatePage() {
                 {isEditingName ? (
                     <CardHeader className="p-0 pb-6 flex flex-row items-center space-y-0">
                         <Input
-                            value={leavePolicy.name}
+                            value={leavesPolicy.name}
                             onChange={(e) => setLeavePolicy({...leavePolicy!, name: e.target.value})}
                             placeholder="Enter policy name"
                             className="flex-1"
@@ -181,7 +166,7 @@ export default function LeavePolicyUpdatePage() {
                 ) : (
                     <CardHeader className="p-0 pb-6">
                         <CardTitle className="text-xl">
-                            {leavePolicy?.name}
+                            {leavesPolicy?.name}
                             <Button
                                 className="w-full sm:w-auto ml-2"
                                 variant="outline"
@@ -196,7 +181,7 @@ export default function LeavePolicyUpdatePage() {
 
                 <Card>
                     <LeavePolicyTable
-                        activatedTypes={leavePolicy?.activatedTypes ?? []}
+                        activatedTypes={leavesPolicy?.activatedTypes ?? []}
                         onEdit={(type) => {
                             setSelectedLeaveType(type);
                             setIsUpdateDialogOpen(true);
@@ -205,7 +190,7 @@ export default function LeavePolicyUpdatePage() {
                     />
                 </Card>
 
-                {leavePolicy?.activatedTypes && (
+                {leavesPolicy?.activatedTypes && (
                     <div className="flex justify-end gap-3 mt-6">
                         <Button
                             variant="outline"
@@ -227,7 +212,7 @@ export default function LeavePolicyUpdatePage() {
                 onClose={() => setIsCreateDialogOpen(false)}
                 leaveTypes={leaveTypes}
                 onSave={addLeaveType}
-                activatedLeaveTypes={leavePolicy?.activatedTypes}
+                activatedLeaveTypes={leavesPolicy?.activatedTypes}
             />
 
             <LeavePolicyActivatedTypeUpdateDialog

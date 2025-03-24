@@ -3,9 +3,9 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
-import {LeavePolicyResponse, UserLeaveBalanceResponse} from "@/core/types/leave.ts";
+import {UserLeaveBalanceResponse} from "@/core/types/leave.ts";
 import {UserResponse} from "@/core/types/user.ts";
-import {getLeavesBalance, getLeavesPolicy} from "@/core/services/leaveService.ts";
+import {getLeavesBalance} from "@/core/services/leaveService.ts";
 import {getUser} from "@/core/services/userService.ts";
 import LeaveList from "@/modules/leave/components/LeaveList.tsx";
 import UserLeaveBalanceItem from "@/modules/home/components/UserLeaveBalanceItem.tsx";
@@ -16,17 +16,18 @@ import PageContent from "@/components/layout/PageContent.tsx";
 import {PageSection} from "@/components/layout/PageSection.tsx";
 import {PencilIcon} from "@heroicons/react/24/outline";
 import {useLeaves} from "@/core/stores/leavesStore.ts";
+import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function UserDetailsPage() {
     const {id} = useParams();
     const [employeeDetails, setEmployeeDetails] = useState<UserResponse | null>(null);
     const [balanceData, setBalanceData] = useState<UserLeaveBalanceResponse[]>([]);
-    const [leavePolicy, setLeavePolicy] = useState<LeavePolicyResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const location = useLocation();
     const navigate = useNavigate();
 
     const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves({userId: Number(id)}, currentPage);
+    const {data : leavesPolicy} = useLeavesPolicy(employeeDetails?.leavePolicy?.id);
 
     // Unified data fetching
     const fetchEmployeeData = async (page = 0) => {
@@ -40,8 +41,6 @@ export default function UserDetailsPage() {
             setEmployeeDetails(userDetails);
             setBalanceData(userBalance);
 
-            const userPolicy = await getLeavesPolicy(userDetails.leavePolicy.id);
-            setLeavePolicy(userPolicy || null);
         } catch (error) {
             const errorMessage = getErrorMessage(error as Error | string);
             toast({
@@ -76,7 +75,7 @@ export default function UserDetailsPage() {
                 </Button>
             </PageHeader>
             <PageContent>
-                        <UserDetailsCard employeeDetails={employeeDetails} leavePolicy={leavePolicy}/>
+                        <UserDetailsCard employeeDetails={employeeDetails} leavePolicy={leavesPolicy}/>
 
                         <section>
                             <PageSection title="Leave Balance"
