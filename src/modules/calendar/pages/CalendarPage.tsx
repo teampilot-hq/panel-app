@@ -3,7 +3,6 @@ import {useNavigate} from "react-router-dom";
 import "react-day-picker/dist/style.css";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import {getLeaves} from "@/core/services/leaveService.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import "@/index.css";
@@ -12,13 +11,13 @@ import {Button} from "@/components/ui/button.tsx";
 import {calculateWeekends} from "@/core/utils/date.ts";
 import {getHolidays} from "@/core/services/holidayService.ts";
 import {HolidayResponse} from "@/core/types/holiday.ts";
-import {LeaveResponse} from "@/core/types/leave.ts";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {Week} from "@/core/types/enum.ts";
 import {CustomCalendar} from "@/modules/calendar/components/CustomCalendar.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import {capitalizeFirstLetter} from "@/core/utils/string.ts";
 import PageHeader from "@/components/layout/PageHeader.tsx";
+import {useLeaves} from "@/core/stores/leavesStore.ts";
 
 // 1.Show holidays on calendar
 // 2.Show weekends on calendar
@@ -28,11 +27,12 @@ dayjs.extend(isBetween);
 
 export default function CalendarPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [requestsList, setRequestsList] = useState<LeaveResponse[]>([]);
     const [holidays, setHolidays] = useState<Date[]>([]);
     const [weekendsDays, setWeekendsDays] = useState<string[]>([]);
     const navigate = useNavigate();
     const {user, organization} = useContext(UserContext);
+
+    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves();
 
     // Fetch holidays for the current and next year.
     const fetchHolidays = async () => {
@@ -55,23 +55,6 @@ export default function CalendarPage() {
             });
         }
     };
-
-    // Fetch leave requests
-    useEffect(() => {
-        getLeaves()
-            .then((data) => {
-                setRequestsList(data.contents);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive"
-                });
-            });
-    }, []);
 
     // Fetch holidays and weekends
     useEffect(() => {
@@ -98,7 +81,7 @@ export default function CalendarPage() {
             </PageHeader>
             <PageContent>
                 <CustomCalendar
-                    leaves={requestsList}
+                    leaves={leaves?.contents}
                     holidays={holidays}
                     weekends={weekendsDays}
                     onDateSelect={handleDateSelect}

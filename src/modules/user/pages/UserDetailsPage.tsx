@@ -3,42 +3,41 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
-import {LeavePolicyResponse, LeaveResponse, UserLeaveBalanceResponse} from "@/core/types/leave.ts";
+import {LeavePolicyResponse, UserLeaveBalanceResponse} from "@/core/types/leave.ts";
 import {UserResponse} from "@/core/types/user.ts";
-import {getLeaves, getLeavesBalance, getLeavesPolicy} from "@/core/services/leaveService.ts";
+import {getLeavesBalance, getLeavesPolicy} from "@/core/services/leaveService.ts";
 import {getUser} from "@/core/services/userService.ts";
 import LeaveList from "@/modules/leave/components/LeaveList.tsx";
 import UserLeaveBalanceItem from "@/modules/home/components/UserLeaveBalanceItem.tsx";
 import UserDetailsCard from "@/modules/user/components/UserDetailsCard.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import PageHeader from "@/components/layout/PageHeader";
-import {PagedResponse} from "@/core/types/common.ts";
 import PageContent from "@/components/layout/PageContent.tsx";
 import {PageSection} from "@/components/layout/PageSection.tsx";
 import {PencilIcon} from "@heroicons/react/24/outline";
+import {useLeaves} from "@/core/stores/leavesStore.ts";
 
 export default function UserDetailsPage() {
     const {id} = useParams();
     const [employeeDetails, setEmployeeDetails] = useState<UserResponse | null>(null);
     const [balanceData, setBalanceData] = useState<UserLeaveBalanceResponse[]>([]);
-    const [leaveRequests, setLeaveRequests] = useState<PagedResponse<LeaveResponse> | null>(null);
     const [leavePolicy, setLeavePolicy] = useState<LeavePolicyResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const location = useLocation();
     const navigate = useNavigate();
 
+    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves({userId: Number(id)}, currentPage);
+
     // Unified data fetching
     const fetchEmployeeData = async (page = 0) => {
         try {
-            const [userDetails, userLeaves, userBalance] = await Promise.all([
+            const [userDetails, userBalance] = await Promise.all([
                 getUser(id!),
-                getLeaves({userId: Number(id)}, page),
                 getLeavesBalance(Number(id)),
 
             ]);
 
             setEmployeeDetails(userDetails);
-            setLeaveRequests(userLeaves);
             setBalanceData(userBalance);
 
             const userPolicy = await getLeavesPolicy(userDetails.leavePolicy.id);
@@ -95,7 +94,7 @@ export default function UserDetailsPage() {
 
 
                         <div className="w-full">
-                            {leaveRequests && (
+                            {leaves && (
                                 <>
                                     <PageSection
                                         title="Leaves"
@@ -104,7 +103,7 @@ export default function UserDetailsPage() {
                                     </PageSection>
                                     <Card>
                                         <LeaveList
-                                            leaveRequests={leaveRequests}
+                                            leaveRequests={leaves}
                                             setCurrentPage={setCurrentPage}
                                         />
                                     </Card>

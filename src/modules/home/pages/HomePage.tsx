@@ -1,42 +1,30 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {getLeaves, getLeavesBalance} from "@/core/services/leaveService.ts";
+import {getLeavesBalance} from "@/core/services/leaveService.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {getErrorMessage} from '@/core/utils/errorHandler.ts';
 import {Button} from "@/components/ui/button.tsx";
 import {Plus} from "lucide-react";
 import {Card} from "@/components/ui/card.tsx";
-import {LeaveResponse, UserLeaveBalanceResponse} from "@/core/types/leave.ts";
+import {UserLeaveBalanceResponse} from "@/core/types/leave.ts";
 import UserLeaveBalanceItem from "@/modules/home/components/UserLeaveBalanceItem.tsx";
 import LeaveList from "@/modules/leave/components/LeaveList.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
-import {PagedResponse} from "@/core/types/common.ts";
 import {PageSection} from "@/components/layout/PageSection.tsx";
+import {useLeaves} from "@/core/stores/leavesStore.ts";
 
 // 1.Fetch leave types, amount and used amount
 // 2.Fetch user leave history by detail
 
 export default function HomePage() {
     const [balanceData, setBalanceData] = useState<UserLeaveBalanceResponse[]>([]);
-    const [leaveRequests, setLeaveRequests] = useState<PagedResponse<LeaveResponse> | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const navigate = useNavigate();
     const {user} = useContext(UserContext);
 
-    const fetchLeaveRequests = async (page = 0) => {
-        try {
-            const userLeaves = await getLeaves({userId: user?.id}, page);
-            setLeaveRequests(userLeaves);
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        }
-    }
+    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves({userId: user?.id}, currentPage);
 
     const fetchLeaveBalance = async () => {
         try {
@@ -53,7 +41,6 @@ export default function HomePage() {
 
     useEffect(() => {
         if (!user) return;
-        fetchLeaveRequests(currentPage);
         fetchLeaveBalance();
     }, [user, currentPage]);
 
@@ -85,7 +72,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="w-full">
-                        {leaveRequests && (
+                        {leaves && (
                             <>
                                 <PageSection
                                     title="My Leaves"
@@ -94,7 +81,7 @@ export default function HomePage() {
                                 </PageSection>
                                 <Card>
                                     <LeaveList
-                                        leaveRequests={leaveRequests}
+                                        leaveRequests={leaves}
                                         setCurrentPage={setCurrentPage}
                                     />
                                 </Card>

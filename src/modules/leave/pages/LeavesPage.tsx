@@ -2,12 +2,11 @@ import React, {useContext, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {getLeaves, updateLeavesStatus} from "@/core/services/leaveService.ts";
+import {updateLeavesStatus} from "@/core/services/leaveService.ts";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {LeaveStatus, UserRole} from '@/core/types/enum.ts';
 import {GetLeavesFilter, LeaveResponse} from '@/core/types/leave.ts';
-import {PagedResponse} from '@/core/types/common.ts';
 import {Eye} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -25,6 +24,7 @@ import {getTeams} from "@/core/services/teamService.ts";
 import {TeamResponse} from "@/core/types/team.ts";
 import LeaveStatusBadge from "@/modules/leave/components/LeaveStatusBadge.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
+import {useLeaves} from "@/core/stores/leavesStore.ts";
 
 export default function LeavesPage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -32,7 +32,6 @@ export default function LeavesPage() {
     const [currentPage, setCurrentPage] = useState<number>(0);
     const [users, setUsers] = useState<UserResponse[] | null>(null);
     const [teams, setTeams] = useState<TeamResponse[]>([]);
-    const [leaves, setLeaves] = useState<PagedResponse<LeaveResponse> | null>(null);
     const {user} = useContext(UserContext);
     const isTeamAdmin = user?.role === UserRole.TEAM_ADMIN;
     const assignedTeamId = user?.team?.id;
@@ -40,6 +39,8 @@ export default function LeavesPage() {
         status: LeaveStatus.PENDING,
         teamId: isTeamAdmin ? assignedTeamId : null
     });
+
+    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves(filters, currentPage);
 
     const fetchUsers = async () => {
         try {
@@ -69,20 +70,6 @@ export default function LeavesPage() {
         }
     };
 
-    const fetchLeaves = async () => {
-        try {
-            const response = await getLeaves(filters, currentPage);
-            setLeaves(response);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    }
-
     const handleLeavesFilter = (newFilters: GetLeavesFilter) => {
         setFilters(prevFilters => ({
             ...prevFilters,
@@ -95,7 +82,6 @@ export default function LeavesPage() {
     // Fetch pending leave requests
     useEffect(() => {
         fetchUsers();
-        fetchLeaves();
         fetchTeams();
     }, [currentPage, filters]);
 
@@ -114,7 +100,6 @@ export default function LeavesPage() {
                 description: `Request ${status.toLowerCase()} successfully.`,
                 variant: "default",
             });
-            fetchLeaves();
         } catch (error) {
             const errorMessage = getErrorMessage(error as Error);
             toast({
