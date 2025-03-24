@@ -35,7 +35,7 @@ export function useCreateLeavesPolicy() {
     });
 }
 
-export function useUpdateLeavePolicy(payload: LeavePolicyUpdateRequest, id: number) {
+export function useUpdateLeavePolicy() {
     const queryClient = useQueryClient();
 
     return useMutation({

@@ -5,11 +5,10 @@ import {Card, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Pencil, Plus, Save, X} from "lucide-react";
 import {toast} from "@/components/ui/use-toast";
-import {getLeavesTypes, updateLeavePolicy,} from "@/core/services/leaveService";
+import {getLeavesTypes} from "@/core/services/leaveService";
 import LeavePolicyActivatedTypeUpdateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeUpdateDialog.tsx";
 import {
-    LeavePolicyActivatedTypeResponse,
-    LeavePolicyResponse,
+    LeavePolicyActivatedTypeResponse, LeavePolicyResponse,
     LeavePolicyStatus,
     LeaveTypeResponse
 } from "@/core/types/leave.ts";
@@ -18,19 +17,26 @@ import {LeavePolicyTable} from "@/modules/leave/components/LeavePolicyTable.tsx"
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import LeavePolicyActivatedTypeCreateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeCreateDialog.tsx";
-import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
+import {useLeavesPolicy, useUpdateLeavePolicy} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function LeavePolicyUpdatePage() {
     const {id} = useParams();
-    const [leavePolicy, setLeavePolicy] = useState<LeavePolicyResponse | null>(null);
     const [leaveTypes, setLeaveTypes] = useState<LeaveTypeResponse[]>([]);
     const [selectedLeaveType, setSelectedLeaveType] = useState<LeavePolicyActivatedTypeResponse | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const navigate = useNavigate();
+    const [editedPolicy, setEditedPolicy] = useState<LeavePolicyResponse | null>(null);
 
     const {data : leavesPolicy} = useLeavesPolicy(Number(id));
+    const updateLeavePolicyMutation = useUpdateLeavePolicy();
+
+    useEffect(() => {
+        if (leavesPolicy) {
+            setEditedPolicy(leavesPolicy);
+        }
+    }, [leavesPolicy]);
 
     // Fetch leave Types
     useEffect(() => {
@@ -51,12 +57,12 @@ export default function LeavePolicyUpdatePage() {
     }, []);
 
     // Handle Policy Name Change
-    const savePolicyName = async () => {
-        if (!leavesPolicy) return;
+    const savePolicyName = () => {
+        if (!editedPolicy) return;
 
-        const updatedName = leavePolicy.name;
+        const updatedName = editedPolicy.name;
 
-        if (!updatedName) {
+        if (!editedPolicy.name) {
             toast({
                 title: "Error",
                 description: "Policy name cannot be empty",
@@ -65,17 +71,17 @@ export default function LeavePolicyUpdatePage() {
             return;
         }
 
-        setLeavePolicy({...leavePolicy, name: updatedName});
+        setEditedPolicy({...editedPolicy, name: updatedName});
         setIsEditingName(false);
     };
 
     // Handle Add Leave Type
     const addLeaveType = (newType: LeavePolicyActivatedTypeResponse) => {
-        if (!leavesPolicy) return;
+        if (!editedPolicy) return;
 
-        setLeavePolicy({
-            ...leavePolicy,
-            activatedTypes: [...leavePolicy.activatedTypes, newType],
+        setEditedPolicy({
+            ...editedPolicy,
+            activatedTypes: [...editedPolicy.activatedTypes, newType],
         });
 
         setIsCreateDialogOpen(false);
@@ -83,11 +89,11 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Update Leave Type
     const updateLeaveType = (updatedType: LeavePolicyActivatedTypeResponse) => {
-        if (!leavesPolicy) return;
+        if (!editedPolicy) return;
 
-        setLeavePolicy({
-            ...leavePolicy,
-            activatedTypes: leavePolicy.activatedTypes.map((type) =>
+        setEditedPolicy({
+            ...editedPolicy,
+            activatedTypes: editedPolicy.activatedTypes.map((type) =>
                 type.typeId === updatedType.typeId ? updatedType : type
             ),
         });
@@ -98,42 +104,38 @@ export default function LeavePolicyUpdatePage() {
 
     // Handle Remove Leave Type
     const removeLeaveType = (typeId: number) => {
-        if (!leavesPolicy) return;
+        if (!editedPolicy) return;
 
-        setLeavePolicy({
-            ...leavePolicy,
-            activatedTypes: leavePolicy.activatedTypes.filter((type) => type.typeId !== typeId),
+        setEditedPolicy({
+            ...editedPolicy,
+            activatedTypes: editedPolicy.activatedTypes.filter((type) => type.typeId !== typeId),
         });
     };
 
     // Save Final Changes
     const savePolicy = async () => {
-        if (!leavesPolicy) return;
+        if (!editedPolicy) return;
 
-        try {
-            await updateLeavePolicy(
-                {
-                    name: leavePolicy.name,
-                    activatedTypes: leavePolicy.activatedTypes,
+        updateLeavePolicyMutation.mutate(
+            {
+                payload: {
+                    name: editedPolicy.name,
+                    activatedTypes: editedPolicy.activatedTypes,
                     status: LeavePolicyStatus.ACTIVE,
                 },
-                leavePolicy.id
-            );
-
-            toast({
-                title: "Success",
-                description: "Leave policy updated successfully",
-                variant: "default",
-            });
-
-            navigate("/leaves/policies");
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        }
+                id: editedPolicy.id
+            },
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: "Leave policy updated successfully.", variant: "default"});
+                    navigate("/leaves/policies");
+                },
+                onError: (error) => {
+                    const errorMessage = getErrorMessage(error as Error | string);
+                    toast({title: "Error", description: errorMessage, variant: "destructive"});
+                }
+            }
+        );
     };
 
     return (
@@ -149,8 +151,12 @@ export default function LeavePolicyUpdatePage() {
                 {isEditingName ? (
                     <CardHeader className="p-0 pb-6 flex flex-row items-center space-y-0">
                         <Input
-                            value={leavesPolicy.name}
-                            onChange={(e) => setLeavePolicy({...leavePolicy!, name: e.target.value})}
+                            value={editedPolicy?.name}
+                            onChange={(e) => {
+                                if (editedPolicy) {
+                                    setEditedPolicy({...editedPolicy!, name: e.target.value})
+                                }
+                            }}
                             placeholder="Enter policy name"
                             className="flex-1"
                         />
@@ -166,7 +172,7 @@ export default function LeavePolicyUpdatePage() {
                 ) : (
                     <CardHeader className="p-0 pb-6">
                         <CardTitle className="text-xl">
-                            {leavesPolicy?.name}
+                            {editedPolicy?.name}
                             <Button
                                 className="w-full sm:w-auto ml-2"
                                 variant="outline"
@@ -181,7 +187,7 @@ export default function LeavePolicyUpdatePage() {
 
                 <Card>
                     <LeavePolicyTable
-                        activatedTypes={leavesPolicy?.activatedTypes ?? []}
+                        activatedTypes={editedPolicy?.activatedTypes ?? []}
                         onEdit={(type) => {
                             setSelectedLeaveType(type);
                             setIsUpdateDialogOpen(true);
