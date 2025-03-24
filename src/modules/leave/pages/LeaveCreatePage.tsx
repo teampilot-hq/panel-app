@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {useLocation, useNavigate} from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import {createLeave, createLeavesCheck, getLeavesPolicy} from "@/core/services/leaveService.ts";
+import {createLeavesCheck, getLeavesPolicy} from "@/core/services/leaveService.ts";
 import {getErrorMessage} from '@/core/utils/errorHandler.ts';
 import DatePicker from '@/modules/leave/components/DatePicker';
 import {Alert, AlertDescription} from '@/components/ui/alert';
@@ -25,6 +25,7 @@ import PageHeader from "@/components/layout/PageHeader.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import LeaveConflicts from "@/modules/leave/components/LeaveConflicts.tsx";
 import {Send, X} from "lucide-react";
+import {useCreateLeave} from "@/core/stores/leavesStore.ts";
 
 /*
 1.Fetch LeavePolicyType name and id from leaves/policies
@@ -64,6 +65,8 @@ export default function LeaveCreatePage() {
     const goBack = () => {
         navigate(location.state?.from || "/");
     };
+
+    const createLeaveMutation = useCreateLeave();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -167,25 +170,26 @@ export default function LeaveCreatePage() {
     }, [startDate, endDate, leaveCategory]);
 
     //Submit leave request form
-    const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            const selectedType = Number(data.leaveCategory);
+    const onSubmit = (data: z.infer<typeof FormSchema>) => {
+        const selectedType = Number(data.leaveCategory);
 
-            const payload: LeaveCreateRequest = {
-                typeId: selectedType,
-                start: dayjs(data.startDate).toISOString(),
-                end: dayjs(data.endDate).toISOString(),
-                reason: data.reason,
-            };
+        const payload: LeaveCreateRequest = {
+            typeId: selectedType,
+            start: dayjs(data.startDate).toISOString(),
+            end: dayjs(data.endDate).toISOString(),
+            reason: data.reason,
+        };
 
-            await createLeave(payload);
-            console.log(payload);
-            navigate('/leaves/pending');
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({title: "Error", description: errorMessage, variant: "destructive"});
-        }
+        createLeaveMutation.mutate(payload, {
+            onSuccess: () => {
+                navigate('/leaves/pending');
+            },
+            onError: (error) => {
+                const errorMessage = getErrorMessage(error as Error | string);
+                setErrorMessage(errorMessage);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
+            }
+        });
     };
 
     // Fetch leave types, holidays, and user's leaves on mount
