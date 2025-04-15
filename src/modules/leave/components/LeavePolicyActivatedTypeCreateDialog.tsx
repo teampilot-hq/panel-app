@@ -63,7 +63,7 @@ export default function LeavePolicyActivatedTypeCreateDialog({
         onClose();
     };
 
-    const availableLeaveTypes = leaveTypes.filter(
+    const availableLeaveTypes = leaveTypes?.filter(
         (type) =>
             type.status !== "ARCHIVED" &&
             !activatedLeaveTypes?.some((activatedType) => activatedType.typeId === type.id)

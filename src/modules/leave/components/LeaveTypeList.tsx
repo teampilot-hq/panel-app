@@ -1,83 +1,82 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Pencil, Plus, Trash} from "lucide-react";
 import {toast} from "@/components/ui/use-toast";
 import {PageSection} from "@/components/layout/PageSection";
-import {createLeavesType, deleteLeaveType, getLeavesTypes, updateLeaveType} from "@/core/services/leaveService";
 import {LeaveTypeCreateRequest, LeaveTypeResponse, LeaveTypeUpdateRequest} from "@/core/types/leave";
 import {getErrorMessage} from "@/core/utils/errorHandler";
 import {LeaveTypeCycleJson} from "@/core/types/enum";
 import {LeaveTypeDialog} from "@/modules/leave/components/LeaveTypeDialog.tsx";
 import {DeleteDialog} from "@/modules/leave/components/DeleteDialog.tsx";
+import {useCreateLeavesType, useDeleteLeaveType, useLeaveTypes, useUpdateLeaveType} from "@/core/stores/leaveTypesStore.ts";
 
 export default function LeaveTypeList() {
-    const [leaveTypeList, setLeaveTypeList] = useState<LeaveTypeResponse[]>([]);
     const [selectedLeaveType, setSelectedLeaveType] = useState<LeaveTypeResponse | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isUpdateMode, setIsUpdateMode] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Fetch leave types
-    useEffect(() => {
-        getLeavesTypes()
-            .then((response: LeaveTypeResponse[]) => setLeaveTypeList(response))
-            .catch((error) => {
-                toast({title: "Error", description: getErrorMessage(error), variant: "destructive"});
-            });
-    }, []);
+    const {data: leaveTypes} = useLeaveTypes();
+    const createLeaveTypeMutation = useCreateLeavesType();
+    const updateLeaveTypeMutation = useUpdateLeaveType();
+    const deleteLeaveTypeMutation = useDeleteLeaveType();
+
 
     const handleUpdateLeaveType = (data: LeaveTypeUpdateRequest, id: number) => {
-        updateLeaveType(data, id)
-            .then((response) => {
-                setLeaveTypeList((prevList) =>
-                    prevList.map((type) => (type.id === id ? response : type))
-                );
-                toast({title: "Success", description: "Leave type updated successfully!"});
-            })
-            .catch((error) => {
-                toast({title: "Error", description: getErrorMessage(error), variant: "destructive"});
-            })
-            .finally(() => {
-                setIsDialogOpen(false);
-            });
+        updateLeaveTypeMutation.mutate(
+            {data, id},
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: "Leave type updated successfully!"});
+                },
+                onError: (error) => {
+                    toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+                },
+                onSettled: () => {
+                    console.log('onSettled executed');
+                    setIsDialogOpen(false);
+                }
+            }
+        )
     };
 
     const handleCreateLeaveType = (data: LeaveTypeCreateRequest) => {
-        createLeavesType(data)
-            .then((response) => {
-                setLeaveTypeList((prevList) => [...prevList, response]);
-                toast({title: "Success", description: "Leave type created successfully!"});
-            })
-            .catch((error) => {
-                toast({title: "Error", description: getErrorMessage(error), variant: "destructive"});
-            })
-            .finally(() => {
+        createLeaveTypeMutation.mutate(data, {
+            onSuccess: () => {
+                toast({ title: "Success", description: "Leave type created successfully!" });
                 setIsDialogOpen(false);
-            });
+            },
+            onError: (error) => {
+                toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+                setIsDialogOpen(false);
+            },
+        });
     };
 
-    const handleRemoveLeaveType = async () => {
+    const handleRemoveLeaveType = () => {
         if (!selectedLeaveType) return;
 
-        try {
-            setIsProcessing(true);
-            await deleteLeaveType(selectedLeaveType.id);
+        setIsProcessing(true);
 
-            setLeaveTypeList((prev) => prev.filter((type) => type.id !== selectedLeaveType.id));
-            toast({title: "Success", description: "Leave type removed successfully!", variant: "default"});
-        } catch (error) {
-            toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
-        } finally {
-            setIsProcessing(false);
-            setSelectedLeaveType(null);
-            setIsDeleteDialogOpen(false);
-        }
+        deleteLeaveTypeMutation.mutate(selectedLeaveType.id, {
+            onSuccess: () => {
+                toast({title: "Success", description: "Leave type removed successfully!", variant: "default"});
+            },
+            onError: (error) => {
+                toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
+            },
+            onSettled: () => {
+                setIsProcessing(false);
+                setSelectedLeaveType(null);
+                setIsDeleteDialogOpen(false);
+            }
+        });
     };
 
-    const sortedLeaveTypes = leaveTypeList.sort((a) => (a.status === "ARCHIVED" ? 1 : -1));
+    const sortedLeaveTypes = leaveTypes?.sort((a) => (a.status === "ARCHIVED" ? 1 : -1));
 
     return (
         <>
@@ -108,7 +107,7 @@ export default function LeaveTypeList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {sortedLeaveTypes.map((leaveType) => (
+                        {sortedLeaveTypes?.map((leaveType) => (
                             <LeaveTypeRowItem
                                 key={leaveType.id}
                                 leaveType={leaveType}

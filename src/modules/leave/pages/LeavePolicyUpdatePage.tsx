@@ -5,12 +5,10 @@ import {Card, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Pencil, Plus, Save, X} from "lucide-react";
 import {toast} from "@/components/ui/use-toast";
-import {getLeavesTypes} from "@/core/services/leaveService";
 import LeavePolicyActivatedTypeUpdateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeUpdateDialog.tsx";
 import {
     LeavePolicyActivatedTypeResponse, LeavePolicyResponse,
     LeavePolicyStatus,
-    LeaveTypeResponse
 } from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler";
 import {LeavePolicyTable} from "@/modules/leave/components/LeavePolicyTable.tsx";
@@ -18,10 +16,10 @@ import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import LeavePolicyActivatedTypeCreateDialog from "@/modules/leave/components/LeavePolicyActivatedTypeCreateDialog.tsx";
 import {useLeavesPolicy, useUpdateLeavePolicy} from "@/core/stores/leavePoliciesStore.ts";
+import {useLeaveTypes} from "@/core/stores/leaveTypesStore.ts";
 
 export default function LeavePolicyUpdatePage() {
     const {id} = useParams();
-    const [leaveTypes, setLeaveTypes] = useState<LeaveTypeResponse[]>([]);
     const [selectedLeaveType, setSelectedLeaveType] = useState<LeavePolicyActivatedTypeResponse | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -30,6 +28,7 @@ export default function LeavePolicyUpdatePage() {
     const [editedPolicy, setEditedPolicy] = useState<LeavePolicyResponse | null>(null);
 
     const {data : leavesPolicy} = useLeavesPolicy(Number(id));
+    const {data: leaveTypes} = useLeaveTypes();
     const updateLeavePolicyMutation = useUpdateLeavePolicy();
 
     useEffect(() => {
@@ -37,24 +36,6 @@ export default function LeavePolicyUpdatePage() {
             setEditedPolicy(leavesPolicy);
         }
     }, [leavesPolicy]);
-
-    // Fetch leave Types
-    useEffect(() => {
-        const fetchLeaveTypes = async () => {
-            try {
-                const types = await getLeavesTypes();
-                setLeaveTypes(types);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: getErrorMessage(error as Error),
-                    variant: "destructive",
-                });
-            }
-        };
-
-        fetchLeaveTypes();
-    }, []);
 
     // Handle Policy Name Change
     const savePolicyName = () => {
