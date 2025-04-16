@@ -17,13 +17,13 @@ const queryClient = new QueryClient({
 
 export default function App() {
     return (
-        <ThemeContextProvider>
-            <UserContextProvider>
-                <QueryClientProvider client={queryClient}>
-                    <Root/>
-                    <ReactQueryDevtools initialIsOpen={false}/>
-                </QueryClientProvider>
-            </UserContextProvider>
-        </ThemeContextProvider>
-    )
+        <QueryClientProvider client={queryClient}>
+            <ThemeContextProvider>
+                <UserContextProvider>
+                    <Root />
+                </UserContextProvider>
+            </ThemeContextProvider>
+            <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+    );
 }

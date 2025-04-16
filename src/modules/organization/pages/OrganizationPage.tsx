@@ -1,9 +1,8 @@
 import React, {useContext, useEffect, useState} from "react";
 import {useForm, UseFormReturn} from "react-hook-form";
-import {getOrganization, updateOrganization} from "@/core/services/organizationService";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {country} from "@/core/types/country.ts";
-import {OrganizationResponse, OrganizationUpdateRequest} from "@/core/types/organization.ts";
+import {OrganizationUpdateRequest} from "@/core/types/organization.ts";
 import {Week} from "@/core/types/enum.ts";
 import {toast} from "@/components/ui/use-toast";
 import {Button} from "@/components/ui/button";
@@ -18,6 +17,7 @@ import {UserContext} from "@/contexts/UserContext";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import {Save, X} from "lucide-react";
+import {useOrganization, useUpdateOrganization} from "@/core/stores/organizationStore.ts";
 
 const FormSchema = z.object({
     name: z.string().min(2, {message: "organization name must be over 2 characters"}).max(20, {message: "organization name must be under 20 characters"}),
@@ -31,9 +31,11 @@ function getWeekDayName(day: Week): string {
 }
 
 export default function OrganizationPage() {
-    const [organizationInfo, setOrganizationInfo] = useState<OrganizationResponse | null>(null);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const {user} = useContext(UserContext);
+
+    const {data: organization} = useOrganization();
+    const updateOrganizationMutation = useUpdateOrganization();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -45,32 +47,23 @@ export default function OrganizationPage() {
         },
     });
 
-    // Fetch organization info and set default values
+    // Fetch organization and set default values
     useEffect(() => {
-        getOrganization()
-            .then((response: OrganizationResponse) => {
-                setOrganizationInfo(response);
-                const countryName = country.find((country) => country.code === response.country)?.name || "";
-                form.reset({
-                    name: response.name,
-                    country: countryName,
-                    weekFirstDay: response.weekFirstDay,
-                    workingDays: response.workingDays,
-                });
-            })
-            .catch((error) => {
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
+        if (organization) {
+            const countryName = country.find(c => c.code === organization.country)?.name || "";
+            form.reset({
+                name: organization.name,
+                country: countryName,
+                weekFirstDay: organization.weekFirstDay,
+                workingDays: organization.workingDays,
             });
-    }, []);
+        }
+    }, [organization]);
 
     // Handle form submission
     const onSubmit = (data: z.infer<typeof FormSchema>) => {
-        const countryCode = country.find((country) => country.name === data.country)?.code || "";
+        const countryCode = country.find((c) => c.name === data.country)?.code || "";
+
         const payload: OrganizationUpdateRequest = {
             name: data.name,
             timezone: user.timezone,
@@ -82,25 +75,17 @@ export default function OrganizationPage() {
 
         setIsProcessing(true);
 
-        updateOrganization(payload)
-            .then((response: OrganizationResponse) => {
+        updateOrganizationMutation.mutate(payload, {
+            onSuccess: () => {
+                toast({title: "Success", description: "Organization updated successfully!", variant: "default",});
+            },
+            onError: (error) => {
+                toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+            },
+            onSettled: () => {
                 setIsProcessing(false);
-                setOrganizationInfo(response);
-                toast({
-                    title: "Success",
-                    description: "organization updated successfully!",
-                    variant: "default",
-                });
-            })
-            .catch((error) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
+            }
+        });
     };
 
     return (
