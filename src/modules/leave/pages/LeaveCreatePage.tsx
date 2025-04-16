@@ -5,7 +5,6 @@ import {z} from 'zod';
 import {useLocation, useNavigate} from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import {createLeavesCheck} from "@/core/services/leaveService.ts";
 import {getErrorMessage} from '@/core/utils/errorHandler.ts';
 import DatePicker from '@/modules/leave/components/DatePicker';
 import {Alert, AlertDescription} from '@/components/ui/alert';
@@ -25,7 +24,7 @@ import PageHeader from "@/components/layout/PageHeader.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import LeaveConflicts from "@/modules/leave/components/LeaveConflicts.tsx";
 import {Send, X} from "lucide-react";
-import {useCreateLeave} from "@/core/stores/leavesStore.ts";
+import {useCreateLeave, useCreateLeavesCheck} from "@/core/stores/leavesStore.ts";
 import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
 
 /*
@@ -69,6 +68,7 @@ export default function LeaveCreatePage() {
 
     const createLeaveMutation = useCreateLeave();
     const {data : leavesPolicy} = useLeavesPolicy(user?.leavePolicy?.id);
+    const createLeaveCheckMutation = useCreateLeavesCheck();
 
     useEffect(() => {
         if (leavesPolicy?.activatedTypes) {
@@ -128,7 +128,7 @@ export default function LeaveCreatePage() {
 
         const fetchDuration = async () => {
             try {
-                const response = await createLeavesCheck({
+                const response = await createLeaveCheckMutation.mutateAsync({
                     typeId: Number(leaveCategory),
                     start: dayjs(startDate).toISOString(),
                     end: dayjs(endDate).toISOString(),
