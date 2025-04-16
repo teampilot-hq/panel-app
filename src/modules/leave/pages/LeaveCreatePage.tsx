@@ -14,8 +14,6 @@ import {Card} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {toast} from "@/components/ui/use-toast";
 import {calculateWeekends, getNextWorkingDay, isDateInHoliday, isDateInWeekend} from "@/core/utils/date.ts";
-import {getHolidays} from "@/core/services/holidayService";
-import {HolidayResponse} from "@/core/types/holiday.ts";
 import {UserContext} from "@/contexts/UserContext";
 import {Week} from "@/core/types/enum.ts";
 import {capitalizeFirstLetter} from "@/core/utils/string.ts";
@@ -26,6 +24,7 @@ import LeaveConflicts from "@/modules/leave/components/LeaveConflicts.tsx";
 import {Send, X} from "lucide-react";
 import {useCreateLeave, useCreateLeavesCheck} from "@/core/stores/leavesStore.ts";
 import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
+import {useHolidays} from "@/core/stores/holidayStore.ts";
 
 /*
 1.Fetch LeavePolicyType name and id from leaves/policies
@@ -52,7 +51,6 @@ const FormSchema = z.object({
 });
 
 export default function LeaveCreatePage() {
-    const [holidays, setHolidays] = useState<Date[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeavePolicyActivatedTypeResponse[]>([]);
     const [weekendsDays, setWeekendsDays] = useState<string[]>([]);
     const [duration, setDuration] = useState<number>(0);
@@ -91,29 +89,17 @@ export default function LeaveCreatePage() {
     const endDate = watch('endDate');
     const leaveCategory = watch("leaveCategory");
 
-    // Fetch holidays
-    const fetchHolidays = async () => {
-        try {
-            const currentYear = new Date().getFullYear();
-            const nextYear = currentYear + 1;
-            const currentYearHolidays: HolidayResponse[] = await getHolidays(currentYear, user?.country);
-            const nextYearHolidays: HolidayResponse[] = await getHolidays(nextYear, user?.country);
-            const holidaysDates = [
-                ...currentYearHolidays.map((holiday) => new Date(holiday.date)),
-                ...nextYearHolidays.map((holiday) => new Date(holiday.date)),
-            ];
-            setHolidays(holidaysDates);
-        } catch (error) {
-            console.log("Fetching holidays", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    };
+    // get holidays
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+
+    const { data: currentYearHolidays = [] } = useHolidays(currentYear, user?.country);
+    const { data: nextYearHolidays = [] } = useHolidays(nextYear, user?.country);
+
+    const holidays = [
+        ...currentYearHolidays.map((h) => new Date(h.date)),
+        ...nextYearHolidays.map((h) => new Date(h.date)),
+    ];
 
     // Adjust endDate if it's before startDate
     useEffect(() => {
@@ -176,8 +162,6 @@ export default function LeaveCreatePage() {
 
     // Fetch leave types, holidays, and user's leaves on mount
     useEffect(() => {
-        fetchHolidays();
-
         if (organization?.workingDays) {
             const weekends = calculateWeekends(organization.workingDays as Week[]);
             setWeekendsDays(weekends.map(day => capitalizeFirstLetter(day.toLowerCase())));
