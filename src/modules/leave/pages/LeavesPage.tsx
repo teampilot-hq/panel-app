@@ -19,18 +19,16 @@ import LeaveDuration from "@/modules/leave/components/LeaveDuration.tsx";
 import LeaveFilterForm from "@/modules/leave/components/LeaveFilterForm.tsx";
 import {UserResponse} from "@/core/types/user.ts";
 import {getUsers} from "@/core/services/userService.ts";
-import {getTeams} from "@/core/services/teamService.ts";
-import {TeamResponse} from "@/core/types/team.ts";
 import LeaveStatusBadge from "@/modules/leave/components/LeaveStatusBadge.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import { useLeaves, useUpdateLeaveStatus} from "@/core/stores/leavesStore.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
 
 export default function LeavesPage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [selectedLeave, setSelectedLeave] = useState<LeaveResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const [users, setUsers] = useState<UserResponse[] | null>(null);
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
     const {user} = useContext(UserContext);
     const isTeamAdmin = user?.role === UserRole.TEAM_ADMIN;
     const assignedTeamId = user?.team?.id;
@@ -41,6 +39,7 @@ export default function LeavesPage() {
 
     const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves(filters, currentPage);
     const updateLeaveStatusMutation = useUpdateLeaveStatus();
+    const {data: teams} = useTeams();
 
     const fetchUsers = async () => {
         try {
@@ -56,20 +55,6 @@ export default function LeavesPage() {
         }
     }
 
-    const fetchTeams = async () => {
-        try {
-            const response = await getTeams();
-            setTeams(response);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        }
-    };
-
     const handleLeavesFilter = (newFilters: GetLeavesFilter) => {
         setFilters(prevFilters => ({
             ...prevFilters,
@@ -82,7 +67,6 @@ export default function LeavesPage() {
     // Fetch pending leave requests
     useEffect(() => {
         fetchUsers();
-        fetchTeams();
     }, [currentPage, filters]);
 
     // View request details

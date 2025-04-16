@@ -4,7 +4,6 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {toast} from "@/components/ui/use-toast";
-import {getTeams} from "@/core/services/teamService";
 import {getUser, updateUser} from "@/core/services/userService";
 import {TeamResponse} from "@/core/types/team.ts";
 import {LeavePolicyResponse} from "@/core/types/leave.ts";
@@ -23,6 +22,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import dayjs from "dayjs";
 import {Calendar} from "@/components/ui/calendar.tsx";
 import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(1, {message: "First Name is required"}),
@@ -39,12 +39,11 @@ export default function UserUpdatePage() {
     const {id} = useParams();
     const navigate = useNavigate();
     const [employee, setEmployee] = useState<UserResponse | null>(null);
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
-    const [leavePolicies, setLeavePolicies] = useState<LeavePolicyResponse[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const location = useLocation();
 
     const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+    const {data: teams} = useTeams();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -89,24 +88,6 @@ export default function UserUpdatePage() {
 
         fetchEmployeeDetails();
     }, [id, reset]);
-
-    // Fetch teams and leave policies
-    useEffect(() => {
-        const fetchMetadata = async () => {
-            try {
-                const [teamData] = await Promise.all([getTeams()]);
-                setTeams(teamData);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Failed to fetch teams or leave policies.",
-                    variant: "destructive",
-                });
-            }
-        };
-
-        fetchMetadata();
-    }, []);
 
     const onSubmit = async (data: z.infer<typeof FormSchema>) => {
         const payload: UserUpdateRequest = {

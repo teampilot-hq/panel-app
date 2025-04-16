@@ -1,8 +1,7 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useState} from "react";
 import {useForm, UseFormReturn} from "react-hook-form";
 import {useNavigate} from "react-router-dom";
 import {createUser} from "@/core/services/userService";
-import {getTeams} from "@/core/services/teamService";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
@@ -25,6 +24,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import { Calendar } from "@/components/ui/calendar"
 import dayjs from "dayjs";
 import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(2, { message: "First Name must be over 2 characters" }).max(20, { message: "First Name must be under 20 characters" }),
@@ -42,11 +42,10 @@ const FormSchema = z.object({
 export default function UserCreatePage() {
     const {user} = useContext(UserContext);
     const navigate = useNavigate();
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
-    const [leavePolicies, setLeavePolicies] = useState<LeavePolicyResponse[]>([]);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
     const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+    const {data: teams} = useTeams();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -63,18 +62,6 @@ export default function UserCreatePage() {
             joinedAt: new Date()
         },
     });
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [teamData] = await Promise.all([getTeams()]);
-                setTeams(teamData);
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-            }
-        };
-        fetchData();
-    }, []);
 
     const onSubmit = (data: z.infer<typeof FormSchema>) => {
         const payload: UserCreateRequest = {

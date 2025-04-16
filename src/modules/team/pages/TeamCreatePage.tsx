@@ -1,10 +1,8 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {useForm} from "react-hook-form";
 import {useNavigate} from 'react-router-dom';
 import {toast} from "@/components/ui/use-toast.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {TeamResponse} from "@/core/types/team.ts";
-import {createTeam, getTeams} from "@/core/services/teamService.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Alert, AlertDescription} from "@/components/ui/alert.tsx";
 import {Card} from "@/components/ui/card.tsx";
@@ -14,6 +12,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@
 import {Input} from "@/components/ui/input.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
+import {useCreateTeam, useTeams} from "@/core/stores/teamStore.ts";
 
 const FormSchema = z.object({
     name: z.string().min(2, {
@@ -27,9 +26,11 @@ type CreateTeamInputs = z.infer<typeof FormSchema>;
 
 export default function TeamCreatePage() {
     const navigate = useNavigate();
-    const [teamList, setTeamList] = useState<TeamResponse[]>([]);
     const [errorMessage, setErrorMessage] = useState<string>("");
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+    const {data: teams} = useTeams();
+    const createTeamMutation = useCreateTeam();
 
     const form = useForm<CreateTeamInputs>({
         resolver: zodResolver(FormSchema),
@@ -38,27 +39,12 @@ export default function TeamCreatePage() {
         },
     });
 
-    useEffect(() => {
-        getTeams()
-            .then((response: TeamResponse[]) => {
-                setTeamList(response);
-            })
-            .catch((error) => {
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
-    }, []);
-
     const onSubmit = (data: CreateTeamInputs) => {
         createOrganizationTeam(data);
     };
 
     const createOrganizationTeam = (data: CreateTeamInputs) => {
-        const exists = teamList.some(t => t.name === data.name);
+        const exists = teams.some(t => t.name === data.name);
 
         if (exists) {
             setErrorMessage('A team already exists with this name.');
@@ -71,20 +57,21 @@ export default function TeamCreatePage() {
         };
         setIsProcessing(true);
 
-        createTeam(payload)
-            .then(() => {
-                setIsProcessing(false);
-                navigate('/teams');
-            })
-            .catch((error) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error?.message);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
+        createTeamMutation.mutate(
+            payload,
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: "Team created successfully!"});
+                    navigate('/teams');
+                },
+                onError: (error) => {
+                    toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (

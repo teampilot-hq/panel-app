@@ -5,25 +5,26 @@ import {useForm} from "react-hook-form";
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {TeamCreateRequest, TeamResponse} from "@/core/types/team.ts";
 import {Save, X} from "lucide-react";
+import {useUpdateTeam} from "@/core/stores/teamStore.ts";
+import {getErrorMessage} from "@/core/utils/errorHandler.ts";
+import {toast} from "@/components/ui/use-toast.ts";
 
 type UpdateTeamDialogProps = {
     teamId: number;
     teamName: string;
     onClose: () => void;
-    onSuccess: () => void;
-    updateTeam: (data: TeamCreateRequest, id: number) => Promise<TeamResponse>;
 };
 
 const FormSchema = z.object({
-    name: z.string().min(2, {message: "team Name must be over 2 characters"}).max(20, {
-        message: "team Name must be under 20 characters",
+    name: z.string().min(2, {message: "Team name must be at least 2 characters"}).max(20, {
+        message: "Team name must be under 20 characters",
     }),
 });
 
-export default function TeamUpdateDialog({teamId, teamName, onClose, onSuccess, updateTeam}: UpdateTeamDialogProps) {
+export default function TeamUpdateDialog({teamId, teamName, onClose}: UpdateTeamDialogProps) {
     const [isProcessing, setIsProcessing] = useState(false);
+    const updateTeamMutation = useUpdateTeam();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -31,14 +32,24 @@ export default function TeamUpdateDialog({teamId, teamName, onClose, onSuccess, 
     });
 
     const handleSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            setIsProcessing(true);
-            await updateTeam({name: data.name, metadata: {}}, teamId);
-            onSuccess();
-            onClose();
-        } catch (error) {
-            setIsProcessing(false);
-        }
+        setIsProcessing(true);
+
+        updateTeamMutation.mutate(
+            { id: teamId, data: { name: data.name, metadata: {} } },
+            {
+                onSuccess: () => {
+                    toast({ title: "Success", description: "Team updated successfully!" });
+                    onClose();
+                },
+                onError: (error) => {
+                    const message = getErrorMessage(error);
+                    toast({ title: "Error", description: message, variant: "destructive" });
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (
@@ -53,8 +64,7 @@ export default function TeamUpdateDialog({teamId, teamName, onClose, onSuccess, 
                         <Input {...form.register("name")} />
                     </div>
                     <DialogFooter>
-                        <Button onClick={onClose} type="button" variant="outline"
-                                className="mr-2">
+                        <Button onClick={onClose} type="button" variant="outline" className="mr-2">
                             <X className="w-4 h-4 mr-2"/>
                             Cancel
                         </Button>
