@@ -13,7 +13,7 @@ export function useLeaveTypes() {
     return useQuery({
         queryKey: ['leaveTypes'],
         queryFn: getLeavesTypes
-    })
+    });
 }
 
 export function useCreateLeavesType() {
@@ -21,25 +21,21 @@ export function useCreateLeavesType() {
 
     return useMutation({
         mutationFn: (payload: LeaveTypeCreateRequest) => createLeavesType(payload),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({queryKey: ['leaveTypes']});
-            queryClient.setQueryData(['leaveTypes', data.id], data)
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leaveTypes'] });
         }
-    })
+    });
 }
 
 export function useUpdateLeaveType() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({data, id}: {
-            data: LeaveTypeUpdateRequest,
-            id: number
-        }) => updateLeaveType(data, id),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({queryKey: ['leaveTypes']});
-            queryClient.setQueryData(['leaveTypes', data.id], data)
-        },
+        mutationFn: ({ data, id }: { data: LeaveTypeUpdateRequest; id: number }) =>
+            updateLeaveType(data, id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leaveTypes'] });
+        }
     });
 }
 
@@ -48,16 +44,15 @@ export function useDeleteLeaveType() {
 
     return useMutation({
         mutationFn: (id: number) => deleteLeaveType(id),
-        onSuccess: (id) => {
-            queryClient.invalidateQueries({queryKey: ['leaveTypes']});
-            queryClient.removeQueries({queryKey: ['leaveTypes', id]});
-        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leaveTypes'] });
+        }
     });
 }
 
 export function useLeaveBalance(userId?: number | null) {
     return useQuery({
-        queryKey: ['leaveBalance', userId ?? 'mine'],
-        queryFn: ()=> getLeavesBalance(userId ?? null)
-    })
+        queryKey: ['leaveBalance', userId ?? 'myLeaveBalance'],
+        queryFn: () => getLeavesBalance(userId ?? null)
+    });
 }
