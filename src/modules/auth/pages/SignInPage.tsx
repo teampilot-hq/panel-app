@@ -3,8 +3,7 @@ import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {UserContext} from "~/contexts/UserContext.tsx";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {AuthenticationResponse, LoginRequest} from "@/core/types/authentication.ts";
-import {signin} from "@/core/services/authService";
+import {LoginRequest} from "@/core/types/authentication.ts";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
@@ -15,6 +14,7 @@ import Logo from "@/components/icon/Logo.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
+import {useSignin} from "@/core/stores/authStore.ts";
 
 const FormSchema = z.object({
     email: z.string().email({message: "Please enter a valid email address"}),
@@ -26,8 +26,9 @@ export default function SignInPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const currentURL = searchParams.get('redirect');
-    const [isProcessing, setIsProcessing] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    const signinMutation = useSignin();
 
     const form = useForm({
         resolver: zodResolver(FormSchema),
@@ -43,23 +44,19 @@ export default function SignInPage() {
             password: data.password,
         };
 
-        setIsProcessing(true);
-
-        signin(payload)
-            .then((response: AuthenticationResponse) => {
-                setIsProcessing(false);
+        signinMutation.mutate(payload, {
+            onSuccess: (response) => {
                 authenticate(response.accessToken);
-                navigate(currentURL || '/');
-            })
-            .catch((error: string | null) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
+                navigate(currentURL || "/");
+            },
+            onError: (error) => {
                 toast({
                     title: "Error",
-                    description: errorMessage,
+                    description: getErrorMessage(error),
                     variant: "destructive",
                 });
-            });
+            },
+        });
     };
 
     return (
@@ -147,10 +144,9 @@ export default function SignInPage() {
                                 <Button
                                     type="submit"
                                     className="w-full"
-                                    disabled={isProcessing}
                                 >
                                     <LogIn className="mr-2 h-4 w-4"/>
-                                    {isProcessing ? "Signing in..." : "Sign in"}
+                                    Sign in
                                 </Button>
                             </form>
                         </Form>
