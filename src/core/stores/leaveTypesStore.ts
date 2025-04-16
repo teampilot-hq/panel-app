@@ -1,5 +1,11 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {createLeavesType, deleteLeaveType, getLeavesTypes, updateLeaveType} from "@/core/services/leaveService.ts";
+import {
+    createLeavesType,
+    deleteLeaveType,
+    getLeavesBalance,
+    getLeavesTypes,
+    updateLeaveType
+} from "@/core/services/leaveService.ts";
 import {LeaveTypeCreateRequest, LeaveTypeUpdateRequest} from "@/core/types/leave.ts";
 
 
@@ -47,4 +53,11 @@ export function useDeleteLeaveType() {
             queryClient.removeQueries({queryKey: ['leaveTypes', id]});
         },
     });
+}
+
+export function useLeaveBalance(userId?: number | null) {
+    return useQuery({
+        queryKey: ['leaveBalance', userId ?? 'mine'],
+        queryFn: ()=> getLeavesBalance(userId ?? null)
+    })
 }

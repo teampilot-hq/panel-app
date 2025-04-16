@@ -35,11 +35,6 @@ export async function updateLeavesStatus(payload: LeaveUpdateRequest, id: number
     return response.data;
 }
 
-export async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
-    const response = await axiosInstance.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
-    return response.data;
-}
-
 export async function getLeavesPolicies(): Promise<LeavePolicyResponse[]> {
     const response = await axiosInstance.get(`${baseURL}/policies`);
     return response.data;
@@ -87,5 +82,10 @@ export async function createLeavesType(payload: LeaveTypeCreateRequest): Promise
 
 export async function createLeavesCheck(payload: LeaveCheckRequest): Promise<LeaveCheckResponse> {
     const response = await axiosInstance.post(`${baseURL}/check`, payload);
+    return response.data;
+}
+
+export async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
+    const response = await axiosInstance.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
     return response.data;
 }
