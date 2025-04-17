@@ -1,4 +1,3 @@
-import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {useForm} from "react-hook-form";
 import {z} from "zod";
@@ -10,9 +9,9 @@ import {Card, CardContent, CardFooter} from "@/components/ui/card.tsx";
 import {Separator} from "@/components/ui/separator.tsx";
 import {Send} from "lucide-react";
 import Logo from "@/components/icon/Logo.tsx";
-import {sendGeneratedPasswordEmail} from "@/core/services/authService.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
+import {useSendGeneratedPasswordEmail} from "@/core/stores/authStore.ts";
 
 const FormSchema = z.object({
     email: z.string().email({message: "Please enter a valid email address"}),
@@ -20,24 +19,24 @@ const FormSchema = z.object({
 
 export default function PasswordForgetPage() {
     const navigate = useNavigate();
-    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+    const generatePasswordMutation = useSendGeneratedPasswordEmail();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
         defaultValues: {email: ""},
     });
 
-    const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            setIsProcessing(true);
-            await sendGeneratedPasswordEmail(data.email);
-            toast({title: "Success", description: "A new password has been sent to your email.", variant: "default"});
-            navigate("/signin");
-        } catch (error) {
-            toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
-        } finally {
-            setIsProcessing(false);
-        }
+    const onSubmit = (data: z.infer<typeof FormSchema>) => {
+        generatePasswordMutation.mutate(data.email, {
+            onSuccess: () => {
+                toast({title: "Success", description: "A new password has been sent to your email.", variant: "default",});
+                navigate("/signin");
+            },
+            onError: (error) => {
+                toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+            },
+        });
     };
 
     return (
@@ -72,9 +71,9 @@ export default function PasswordForgetPage() {
                                         </FormItem>
                                     )}
                                 />
-                                <Button type="submit" className="w-full" disabled={isProcessing}>
+                                <Button type="submit" className="w-full">
                                     <Send className="mr-2 h-4 w-4"/>
-                                    {isProcessing ? "Sending..." : "Send New Password"}
+                                    Send New Password
                                 </Button>
                             </form>
                         </Form>

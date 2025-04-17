@@ -3,7 +3,6 @@ import {Link, useNavigate} from "react-router-dom";
 import {UserContext} from "~/contexts/UserContext.tsx";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {signup} from "@/core/services/authService";
 import {country} from '@/core/types/country.ts';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -16,7 +15,8 @@ import Logo from "@/components/icon/Logo.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {AuthenticationResponse, RegistrationRequest} from "@/core/types/authentication.ts";
+import {RegistrationRequest} from "@/core/types/authentication.ts";
+import {useSignup} from "@/core/stores/authStore.ts";
 
 const FormSchema = z.object({
     email: z.string().email({message: "Please enter a valid email address"}),
@@ -31,8 +31,9 @@ const FormSchema = z.object({
 export default function SignUpPage() {
     const {authenticate} = useContext(UserContext);
     const navigate = useNavigate();
-    const [isProcessing, setIsProcessing] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    const signupMutation = useSignup();
 
     const form = useForm({
         resolver: zodResolver(FormSchema),
@@ -61,23 +62,19 @@ export default function SignUpPage() {
             timezone: userTimezone,
         };
 
-        setIsProcessing(true);
-
-        signup(payload)
-            .then((response: AuthenticationResponse) => {
-                setIsProcessing(false);
+        signupMutation.mutate(payload, {
+            onSuccess: (response) => {
                 authenticate(response.accessToken);
                 navigate('/');
-            })
-            .catch((error: string | null) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
+            },
+            onError: (error) => {
                 toast({
                     title: "Error",
-                    description: errorMessage,
+                    description: getErrorMessage(error),
                     variant: "destructive",
                 });
-            });
+            },
+        });
     };
 
     return (
@@ -255,10 +252,9 @@ export default function SignUpPage() {
                                 <Button
                                     type="submit"
                                     className="w-full"
-                                    disabled={isProcessing}
                                 >
                                     <UserPlus className="mr-2 h-4 w-4"/>
-                                    {isProcessing ? "Signing Up..." : "Sign Up"}
+                                    Sign Up
                                 </Button>
                             </form>
                         </Form>

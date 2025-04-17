@@ -18,69 +18,64 @@ import {PagedResponse} from "@/core/types/common.ts";
 
 const baseURL = '/leaves';
 
-async function getLeaves(filter: GetLeavesFilter = {}, pageNumber: number = 0): Promise<PagedResponse<LeaveResponse>> {
+export async function getLeaves(filter: GetLeavesFilter = {}, pageNumber: number = 0): Promise<PagedResponse<LeaveResponse>> {
     const response = await axiosInstance.get(baseURL, {
         params: {...filter, pageNumber}
     });
     return response.data;
 }
 
-async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
-    const response = await axiosInstance.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
-    return response.data;
-}
-
-async function updateLeavesStatus(payload: LeaveUpdateRequest, id: number): Promise<LeaveResponse> {
-    const response = await axiosInstance.put(`${baseURL}/${id}`, payload);
-    return response.data;
-}
-
-async function createLeave(payload: LeaveCreateRequest): Promise<LeaveResponse> {
+export async function createLeave(payload: LeaveCreateRequest): Promise<LeaveResponse> {
     const response = await axiosInstance.post(baseURL, payload);
     return response.data;
 }
 
-async function getLeavesPolicies(): Promise<LeavePolicyResponse[]> {
+export async function updateLeavesStatus(payload: LeaveUpdateRequest, id: number): Promise<LeaveResponse> {
+    const response = await axiosInstance.put(`${baseURL}/${id}`, payload);
+    return response.data;
+}
+
+export async function getLeavesPolicies(): Promise<LeavePolicyResponse[]> {
     const response = await axiosInstance.get(`${baseURL}/policies`);
     return response.data;
 }
 
-async function getLeavesPolicy(id: number): Promise<LeavePolicyResponse> {
+export async function getLeavesPolicy(id: number): Promise<LeavePolicyResponse> {
     const response = await axiosInstance.get(`${baseURL}/policies/${id}`);
     return response.data;
 }
 
-async function createLeavesPolicy(payload: LeavePolicyCreateRequest): Promise<LeavePolicyResponse> {
+export async function createLeavesPolicy(payload: LeavePolicyCreateRequest): Promise<LeavePolicyResponse> {
     const response = await axiosInstance.post(`${baseURL}/policies`, payload);
     return response.data;
 }
 
-async function deleteLeavePolicy(id: number) {
+export async function deleteLeavePolicy(id: number) {
     const response = await axiosInstance.delete(`${baseURL}/policies/${id}`);
     return response.data;
 }
 
-async function updateLeavePolicy(payload: LeavePolicyUpdateRequest, id: number): Promise<LeavePolicyResponse> {
+export async function updateLeavePolicy(payload: LeavePolicyUpdateRequest, id: number): Promise<LeavePolicyResponse> {
     const response = await axiosInstance.put(`${baseURL}/policies/${id}`, payload);
     return response.data;
 }
 
-async function getLeavesTypes(): Promise<LeaveTypeResponse[]> {
+export async function getLeavesTypes(): Promise<LeaveTypeResponse[]> {
     const response = await axiosInstance.get(`${baseURL}/types`);
     return response.data;
 }
 
-async function deleteLeaveType(id: number) {
+export async function deleteLeaveType(id: number) {
     const response = await axiosInstance.delete(`${baseURL}/types/${id}`);
     return response.data;
 }
 
-async function updateLeaveType(payload: LeaveTypeUpdateRequest, id: number): Promise<LeaveTypeResponse> {
+export async function updateLeaveType(payload: LeaveTypeUpdateRequest, id: number): Promise<LeaveTypeResponse> {
     const response = await axiosInstance.put(`${baseURL}/types/${id}`, payload);
     return response.data;
 }
 
-async function createLeavesType(payload: LeaveTypeCreateRequest): Promise<LeaveTypeResponse> {
+export async function createLeavesType(payload: LeaveTypeCreateRequest): Promise<LeaveTypeResponse> {
     const response = await axiosInstance.post(`${baseURL}/types`, payload);
     return response.data;
 }
@@ -90,18 +85,7 @@ export async function createLeavesCheck(payload: LeaveCheckRequest): Promise<Lea
     return response.data;
 }
 
-export {
-    getLeaves,
-    updateLeavesStatus,
-    createLeave,
-    getLeavesPolicies,
-    createLeavesPolicy,
-    updateLeavePolicy,
-    deleteLeavePolicy,
-    getLeavesBalance,
-    getLeavesTypes,
-    deleteLeaveType,
-    updateLeaveType,
-    createLeavesType,
-    getLeavesPolicy
+export async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
+    const response = await axiosInstance.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
+    return response.data;
 }

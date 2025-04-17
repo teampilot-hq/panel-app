@@ -18,10 +18,10 @@ interface DayBoxProps {
 
 export const CalendarDayBox: React.FC<DayBoxProps> = ({date, isHoliday, isWeekend, leaves, isSelected, onClick}) => {
     const isToday = dayjs().isSame(date, "day");
-    const filteredLeaves = leaves.filter(leave => leave.status !== LeaveStatus.REJECTED);
+    const filteredLeaves = leaves?.filter(leave => leave.status !== LeaveStatus.REJECTED);
 
-    const displayedLeaves = filteredLeaves.slice(0, 3);
-    const remainingLeavesCount = filteredLeaves.length - displayedLeaves.length;
+    const displayedLeaves = filteredLeaves?.slice(0, 3);
+    const remainingLeavesCount = filteredLeaves?.length - displayedLeaves?.length;
 
 
     return (
@@ -34,7 +34,7 @@ export const CalendarDayBox: React.FC<DayBoxProps> = ({date, isHoliday, isWeeken
               {dayjs(date).format("D")}
             </span>
 
-            {displayedLeaves.map((leave) => <CalendarLeaveItem leave={leave}/>)}
+            {displayedLeaves?.map((leave) => <CalendarLeaveItem leave={leave}/>)}
 
             {/* More Leaves Indicator */}
             {remainingLeavesCount > 0 && (

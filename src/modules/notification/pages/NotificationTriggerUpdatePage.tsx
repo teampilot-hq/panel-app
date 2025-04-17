@@ -1,59 +1,30 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {Card, CardContent} from '@/components/ui/card';
 import {toast} from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContent from '@/components/layout/PageContent';
-import {EventSchema, NotificationTrigger} from '@/core/types/notifications.ts';
-import {getNotificationEventSchemas, getNotificationTrigger, updateNotificationTrigger} from '@/core/services/notificationService';
 import {getErrorMessage} from '@/core/utils/errorHandler';
 import {PageSection} from '@/components/layout/PageSection.tsx';
 import NotificationTriggerForm, {TriggerInputs} from "@/modules/notification/components/NotificationTriggerForm.tsx";
+import {useNotificationEventSchemas, useNotificationTrigger, useUpdateNotificationTrigger} from "@/core/stores/notificationStore.ts";
 
 export default function NotificationTriggerUpdatePage() {
     const {id} = useParams();
     const navigate = useNavigate();
-    const [trigger, setTrigger] = useState<NotificationTrigger | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [eventSchemas, setEventSchemas] = useState<EventSchema[]>(null);
 
-    useEffect(() => {
-        const fetchTrigger = async () => {
-            try {
-                const trigger = await getNotificationTrigger(Number(id));
-                setTrigger(trigger);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: getErrorMessage(error as Error | string),
-                    variant: "destructive",
-                });
-            }
-        };
+    const {data: trigger} = useNotificationTrigger(Number(id));
+    const {data: eventSchemas} = useNotificationEventSchemas();
+    const updateTriggerMutation = useUpdateNotificationTrigger(Number(id));
 
-        fetchTrigger();
-    }, [id]);
-
-    useEffect(() => {
-        const fetchEventSchemas = async () => {
-            try {
-                const schemas = await getNotificationEventSchemas();
-                setEventSchemas(schemas);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Failed to fetch event schemas",
-                    variant: "destructive",
-                });
-            }
-        };
-        fetchEventSchemas();
-    }, []);
 
     const onSubmit = async (data: TriggerInputs) => {
-        try {
-            setIsProcessing(true);
-            await updateNotificationTrigger({
+        if (!trigger?.id) return;
+
+        setIsProcessing(true);
+        updateTriggerMutation.mutate(
+            {
                 title: data.title,
                 name: data.name,
                 textTemplate: data.textTemplate,
@@ -61,22 +32,20 @@ export default function NotificationTriggerUpdatePage() {
                 eventType: data.eventType,
                 channels: data.channels,
                 receptors: data.receptors,
-            }, trigger.id);
-
-            toast({
-                title: 'Success',
-                description: 'Notification trigger created successfully!',
-            });
-            navigate('/notifications/triggers');
-        } catch (error) {
-            toast({
-                title: 'Error',
-                description: getErrorMessage(error as Error),
-                variant: 'destructive',
-            });
-        } finally {
-            setIsProcessing(false);
-        }
+            },
+            {
+                onSuccess: () => {
+                    toast({title: 'Success', description: 'Notification trigger updated successfully!',});
+                    navigate('/notifications/triggers');
+                },
+                onError: (error) => {
+                    toast({title: 'Error', description: getErrorMessage(error), variant: 'destructive',});
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     if(!eventSchemas || !trigger) {

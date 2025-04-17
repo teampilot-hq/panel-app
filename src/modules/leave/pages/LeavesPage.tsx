@@ -1,13 +1,11 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {getLeaves, updateLeavesStatus} from "@/core/services/leaveService.ts";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {LeaveStatus, UserRole} from '@/core/types/enum.ts';
 import {GetLeavesFilter, LeaveResponse} from '@/core/types/leave.ts';
-import {PagedResponse} from '@/core/types/common.ts';
 import {Eye} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -19,20 +17,16 @@ import PaginationComponent from "@/components/Pagination.tsx";
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 import LeaveDuration from "@/modules/leave/components/LeaveDuration.tsx";
 import LeaveFilterForm from "@/modules/leave/components/LeaveFilterForm.tsx";
-import {UserResponse} from "@/core/types/user.ts";
-import {getUsers} from "@/core/services/userService.ts";
-import {getTeams} from "@/core/services/teamService.ts";
-import {TeamResponse} from "@/core/types/team.ts";
 import LeaveStatusBadge from "@/modules/leave/components/LeaveStatusBadge.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
+import { useLeaves, useUpdateLeaveStatus} from "@/core/stores/leavesStore.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
+import {useUsers} from "@/core/stores/userStore.ts";
 
 export default function LeavesPage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [selectedLeave, setSelectedLeave] = useState<LeaveResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
-    const [users, setUsers] = useState<UserResponse[] | null>(null);
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
-    const [leaves, setLeaves] = useState<PagedResponse<LeaveResponse> | null>(null);
     const {user} = useContext(UserContext);
     const isTeamAdmin = user?.role === UserRole.TEAM_ADMIN;
     const assignedTeamId = user?.team?.id;
@@ -41,47 +35,11 @@ export default function LeavesPage() {
         teamId: isTeamAdmin ? assignedTeamId : null
     });
 
-    const fetchUsers = async () => {
-        try {
-            const response = await getUsers(0, 100);
-            setUsers(response.contents);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    }
-
-    const fetchTeams = async () => {
-        try {
-            const response = await getTeams();
-            setTeams(response);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        }
-    };
-
-    const fetchLeaves = async () => {
-        try {
-            const response = await getLeaves(filters, currentPage);
-            setLeaves(response);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    }
+    const {data : leaves} = useLeaves(filters, currentPage);
+    const updateLeaveStatusMutation = useUpdateLeaveStatus();
+    const {data: teams} = useTeams();
+    const { data: usersData } = useUsers(0, 100);
+    const users = usersData?.contents;
 
     const handleLeavesFilter = (newFilters: GetLeavesFilter) => {
         setFilters(prevFilters => ({
@@ -92,40 +50,29 @@ export default function LeavesPage() {
         setCurrentPage(0);
     };
 
-    // Fetch pending leave requests
-    useEffect(() => {
-        fetchUsers();
-        fetchLeaves();
-        fetchTeams();
-    }, [currentPage, filters]);
-
     // View request details
     const handleRowClick = (request: LeaveResponse) => {
         setSelectedLeave(request);
     };
 
     // Handle leave request approval or rejection
-    const handleRequest = async (status: LeaveStatus, id: number) => {
-        try {
-            setIsProcessing(true);
-            await updateLeavesStatus({status}, id);
-            toast({
-                title: "Success",
-                description: `Request ${status.toLowerCase()} successfully.`,
-                variant: "default",
-            });
-            fetchLeaves();
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-            setSelectedLeave(null);
-        }
+    const handleRequest = (status: LeaveStatus, id: number) => {
+        setIsProcessing(true);
+        updateLeaveStatusMutation.mutate(
+            { payload: {status}, id },
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: `Request ${status.toLowerCase()} successfully.`, variant: "default"});
+                    setIsProcessing(false);
+                    setSelectedLeave(null);
+                },
+                onError: (error) => {
+                    const errorMessage = getErrorMessage(error as Error | string);
+                    toast({title: "Error", description: errorMessage, variant: "destructive"});
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (
@@ -148,7 +95,7 @@ export default function LeavesPage() {
                         </TableHeader>
                         <TableBody>
                             {leaves?.contents.length ? (
-                                leaves.contents.map((request) => (
+                                leaves?.contents.map((request) => (
                                     <LeaveRow
                                         key={request.id}
                                         leave={request}

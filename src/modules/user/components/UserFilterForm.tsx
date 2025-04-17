@@ -2,12 +2,11 @@ import React, {useContext, useEffect, useState} from "react";
 import {Input} from "@/components/ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
-import {TeamResponse} from "@/core/types/team.ts";
-import {getTeams} from "@/core/services/teamService";
 import {Search} from "lucide-react";
 import {Card} from "@/components/ui/card";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {UserRole} from "@/core/types/enum.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
 
 type FilterEmployeesFormProps = {
     onFilter: (query: string, teamId: string) => void;
@@ -19,20 +18,8 @@ export default function UserFilterForm({onFilter}: FilterEmployeesFormProps) {
     const assignedTeamId = user?.team?.id;
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedTeam, setSelectedTeam] = useState<string>(isTeamAdmin && assignedTeamId ? assignedTeamId.toString() : "");
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
 
-    useEffect(() => {
-        const fetchTeams = async () => {
-            try {
-                const teamData = await getTeams();
-                setTeams(teamData);
-            } catch (error) {
-                console.error("Failed to fetch teams:", error);
-            }
-        };
-
-        fetchTeams();
-    }, []);
+    const {data: teams} = useTeams();
 
     useEffect(() => {
         if (isTeamAdmin && assignedTeamId) {
@@ -71,7 +58,7 @@ export default function UserFilterForm({onFilter}: FilterEmployeesFormProps) {
                                 {user?.role === UserRole.ORGANIZATION_ADMIN ? (
                                     <>
                                         <SelectItem key="all" value="ALL">All Teams</SelectItem>
-                                        {teams.map((team) => (
+                                        {teams?.map((team) => (
                                             <SelectItem key={team.id} value={team.id.toString()}
                                                         className="cursor-pointer">
                                                 {team.name}

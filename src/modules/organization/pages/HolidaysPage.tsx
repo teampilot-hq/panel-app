@@ -3,71 +3,42 @@ import {useNavigate} from "react-router-dom";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {toast} from "@/components/ui/use-toast";
-import {HolidayResponse} from "@/core/types/holiday.ts";
 import {country} from "@/core/types/country.ts";
-import {getHolidays, getHolidaysOverview} from "@/core/services/holidayService.ts";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
-import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {CloudDownload} from "lucide-react";
+import {useHolidays, useHolidaysOverview} from "@/core/stores/holidayStore.ts";
 
 export default function OfficialHolidays() {
     const navigate = useNavigate();
-    const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
     const [selectedYear, setSelectedYear] = useState<number | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
     const [yearOptions, setYearOptions] = useState<number[]>([]);
     const [yearToCountries, setYearToCountries] = useState<Record<number, string[]>>({});
 
-    // Fetch holiday overview to populate year and country filters
+    const {data: overview} = useHolidaysOverview();
+    const {data: holidays = []} = useHolidays(selectedYear, selectedCountry);
+
     useEffect(() => {
-        const fetchHolidaysOverview = async () => {
-            try {
-                const overview = await getHolidaysOverview();
+        if (!overview) return;
 
-                // Create mapping of available years to countries
-                const yearMap: Record<number, string[]> = {};
-                overview.forEach(({year, countryCode}) => {
-                    if (!yearMap[year]) yearMap[year] = [];
-                    yearMap[year].push(countryCode);
-                });
+        const yearMap: Record<number, string[]> = {};
+        overview.forEach(({year, countryCode}) => {
+            if (!yearMap[year]) yearMap[year] = [];
+            yearMap[year].push(countryCode);
+        });
 
-                const sortedYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
+        const sortedYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
-                setYearToCountries(yearMap);
-                setYearOptions(sortedYears);
+        setYearToCountries(yearMap);
+        setYearOptions(sortedYears);
 
-                // Set default values
-                if (sortedYears.length > 0) {
-                    const defaultYear = sortedYears[0];
-                    setSelectedYear(defaultYear);
-                    setSelectedCountry(yearMap[defaultYear]?.[0] || null);
-                }
-            } catch (error) {
-                toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
-            }
-        };
-
-        fetchHolidaysOverview();
-    }, []);
-
-    // Fetch holidays when year or country changes
-    useEffect(() => {
-        if (!selectedYear || !selectedCountry) return;
-
-        const fetchHolidays = async () => {
-            try {
-                setHolidays([]);
-                const fetchedHolidays = await getHolidays(selectedYear, selectedCountry);
-                setHolidays(fetchedHolidays);
-            } catch (error) {
-                toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
-            }
-        };
-
-        fetchHolidays();
-    }, [selectedYear, selectedCountry]);
+        if (sortedYears.length > 0) {
+            const defaultYear = sortedYears[0];
+            setSelectedYear(defaultYear);
+            setSelectedCountry(yearMap[defaultYear]?.[0] || null);
+        }
+    }, [overview]);
 
     const navigateToImportHolidays = () => navigate("/settings/official-holidays/import");
 

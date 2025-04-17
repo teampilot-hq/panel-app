@@ -1,8 +1,6 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useState} from "react";
 import {useForm, UseFormReturn} from "react-hook-form";
 import {useNavigate} from "react-router-dom";
-import {createUser} from "@/core/services/userService";
-import {getTeams} from "@/core/services/teamService";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
@@ -16,7 +14,6 @@ import {UserCreateRequest} from "@/core/types/user.ts";
 import {TeamResponse} from "@/core/types/team.ts";
 import {country} from "@/core/types/country.ts";
 import {UserContext} from "@/contexts/UserContext";
-import {getLeavesPolicies} from "@/core/services/leaveService.ts";
 import {LeavePolicyResponse} from "@/core/types/leave.ts";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
@@ -25,6 +22,9 @@ import {UserRole, UserRoleJson} from "@/core/types/enum.ts";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
 import { Calendar } from "@/components/ui/calendar"
 import dayjs from "dayjs";
+import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
+import {useTeams} from "@/core/stores/teamStore.ts";
+import {useCreateUser} from "@/core/stores/userStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(2, { message: "First Name must be over 2 characters" }).max(20, { message: "First Name must be under 20 characters" }),
@@ -42,9 +42,11 @@ const FormSchema = z.object({
 export default function UserCreatePage() {
     const {user} = useContext(UserContext);
     const navigate = useNavigate();
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
-    const [leavePolicies, setLeavePolicies] = useState<LeavePolicyResponse[]>([]);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+    const {data : leavesPolicies} = useLeavesPolicies();
+    const {data: teams} = useTeams();
+    const createUserMutation = useCreateUser();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -62,19 +64,6 @@ export default function UserCreatePage() {
         },
     });
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [teamData, policyData] = await Promise.all([getTeams(), getLeavesPolicies()]);
-                setTeams(teamData);
-                setLeavePolicies(policyData);
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-            }
-        };
-        fetchData();
-    }, []);
-
     const onSubmit = (data: z.infer<typeof FormSchema>) => {
         const payload: UserCreateRequest = {
             email: data.email,
@@ -91,25 +80,22 @@ export default function UserCreatePage() {
         };
 
         setIsProcessing(true);
-        createUser(payload)
-            .then(() => {
-                setIsProcessing(false);
-                toast({
-                    title: "Success",
-                    description: "Employee created successfully!",
-                    variant: "default",
-                });
-                navigate("/users");
-            })
-            .catch((error) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
+
+        createUserMutation.mutate(
+            payload,
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: "Employee created successfully!"});
+                    navigate('/users');
+                },
+                onError: (error) => {
+                    toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (
@@ -150,7 +136,7 @@ export default function UserCreatePage() {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <RoleField form={form}/>
                                         <TeamField form={form} teams={teams}/>
-                                        <LeavePolicyField form={form} leavePolicies={leavePolicies}/>
+                                        <LeavePolicyField form={form} leavePolicies={leavesPolicies}/>
                                         <StartDate form={form}/>
                                     </div>
                                 </div>
@@ -329,7 +315,7 @@ function LeavePolicyField({form, leavePolicies}: FieldProps) {
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a leave policy" />
                             </SelectTrigger>
-                            <SelectContent>{leavePolicies.map((leavePolicy) => (<SelectItem key={leavePolicy.id} value={leavePolicy.id.toString()}>{leavePolicy.name}</SelectItem>))}</SelectContent>
+                            <SelectContent>{leavePolicies?.map((leavePolicy) => (<SelectItem key={leavePolicy.id} value={leavePolicy.id.toString()}>{leavePolicy.name}</SelectItem>))}</SelectContent>
                         </Select>
                     </FormControl>
                     <FormMessage />

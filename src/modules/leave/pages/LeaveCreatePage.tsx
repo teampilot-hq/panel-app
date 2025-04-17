@@ -5,7 +5,6 @@ import {z} from 'zod';
 import {useLocation, useNavigate} from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import {createLeave, createLeavesCheck, getLeaves, getLeavesPolicy} from "@/core/services/leaveService.ts";
 import {getErrorMessage} from '@/core/utils/errorHandler.ts';
 import DatePicker from '@/modules/leave/components/DatePicker';
 import {Alert, AlertDescription} from '@/components/ui/alert';
@@ -15,8 +14,6 @@ import {Card} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {toast} from "@/components/ui/use-toast";
 import {calculateWeekends, getNextWorkingDay, isDateInHoliday, isDateInWeekend} from "@/core/utils/date.ts";
-import {getHolidays} from "@/core/services/holidayService";
-import {HolidayResponse} from "@/core/types/holiday.ts";
 import {UserContext} from "@/contexts/UserContext";
 import {Week} from "@/core/types/enum.ts";
 import {capitalizeFirstLetter} from "@/core/utils/string.ts";
@@ -25,6 +22,9 @@ import PageHeader from "@/components/layout/PageHeader.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import LeaveConflicts from "@/modules/leave/components/LeaveConflicts.tsx";
 import {Send, X} from "lucide-react";
+import {useCreateLeave, useCreateLeavesCheck} from "@/core/stores/leavesStore.ts";
+import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
+import {useHolidays} from "@/core/stores/holidayStore.ts";
 
 /*
 1.Fetch LeavePolicyType name and id from leaves/policies
@@ -51,10 +51,8 @@ const FormSchema = z.object({
 });
 
 export default function LeaveCreatePage() {
-    const [holidays, setHolidays] = useState<Date[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeavePolicyActivatedTypeResponse[]>([]);
     const [weekendsDays, setWeekendsDays] = useState<string[]>([]);
-    const [userLeaves, setUserLeaves] = useState<LeaveResponse[]>([]);
     const [duration, setDuration] = useState<number>(0);
     const [totalLeaveDays, setTotalLeaveDays] = useState<number>(0);
     const [conflicts, setConflicts] = useState<LeaveResponse[]>([]);
@@ -65,6 +63,16 @@ export default function LeaveCreatePage() {
     const goBack = () => {
         navigate(location.state?.from || "/");
     };
+
+    const createLeaveMutation = useCreateLeave();
+    const {data : leavesPolicy} = useLeavesPolicy(user?.leavePolicy?.id);
+    const createLeaveCheckMutation = useCreateLeavesCheck();
+
+    useEffect(() => {
+        if (leavesPolicy?.activatedTypes) {
+            setLeaveTypes(leavesPolicy.activatedTypes);
+        }
+    }, [leavesPolicy]);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -81,55 +89,17 @@ export default function LeaveCreatePage() {
     const endDate = watch('endDate');
     const leaveCategory = watch("leaveCategory");
 
-    // Fetch leave policies
-    const fetchLeavePolicies = async () => {
-        try {
-            if (!user || !user.leavePolicy?.id) {
-                console.log("User or user.leavePolicy.id is not available");
-                return
-            }
-            const userPolicy = await getLeavesPolicy(user?.leavePolicy?.id);
-            if (userPolicy) {
-                const types = userPolicy.activatedTypes;
-                setLeaveTypes(types);
-            } else {
-                console.log("No matching policy found for the user.");
-            }
-        } catch (error) {
-            console.log("Fetching leave Policy", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    };
+    // get holidays
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
 
-    // Fetch holidays
-    const fetchHolidays = async () => {
-        try {
-            const currentYear = new Date().getFullYear();
-            const nextYear = currentYear + 1;
-            const currentYearHolidays: HolidayResponse[] = await getHolidays(currentYear, user?.country);
-            const nextYearHolidays: HolidayResponse[] = await getHolidays(nextYear, user?.country);
-            const holidaysDates = [
-                ...currentYearHolidays.map((holiday) => new Date(holiday.date)),
-                ...nextYearHolidays.map((holiday) => new Date(holiday.date)),
-            ];
-            setHolidays(holidaysDates);
-        } catch (error) {
-            console.log("Fetching holidays", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    };
+    const { data: currentYearHolidays = [] } = useHolidays(currentYear, user?.country);
+    const { data: nextYearHolidays = [] } = useHolidays(nextYear, user?.country);
+
+    const holidays = [
+        ...currentYearHolidays.map((h) => new Date(h.date)),
+        ...nextYearHolidays.map((h) => new Date(h.date)),
+    ];
 
     // Adjust endDate if it's before startDate
     useEffect(() => {
@@ -144,7 +114,7 @@ export default function LeaveCreatePage() {
 
         const fetchDuration = async () => {
             try {
-                const response = await createLeavesCheck({
+                const response = await createLeaveCheckMutation.mutateAsync({
                     typeId: Number(leaveCategory),
                     start: dayjs(startDate).toISOString(),
                     end: dayjs(endDate).toISOString(),
@@ -167,55 +137,31 @@ export default function LeaveCreatePage() {
         fetchDuration();
     }, [startDate, endDate, leaveCategory]);
 
-    // Fetch user's leaves
-    const fetchUserLeaves = async () => {
-        try {
-            if (!user) return;
-            const leavesList = await getLeaves({userId: user.id});
-            const filteredLeaves = leavesList.contents.filter(
-                leave => leave.status === "ACCEPTED" || leave.status === "PENDING"
-            );
-            setUserLeaves(filteredLeaves);
-        } catch (error) {
-            console.log("Fetching user leaves", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({
-                title: "Error",
-                description: "Failed to fetch user leaves.",
-                variant: "destructive",
-            });
-        }
-    };
-
     //Submit leave request form
-    const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            const selectedType = Number(data.leaveCategory);
+    const onSubmit = (data: z.infer<typeof FormSchema>) => {
+        const selectedType = Number(data.leaveCategory);
 
-            const payload: LeaveCreateRequest = {
-                typeId: selectedType,
-                start: dayjs(data.startDate).toISOString(),
-                end: dayjs(data.endDate).toISOString(),
-                reason: data.reason,
-            };
+        const payload: LeaveCreateRequest = {
+            typeId: selectedType,
+            start: dayjs(data.startDate).toISOString(),
+            end: dayjs(data.endDate).toISOString(),
+            reason: data.reason,
+        };
 
-            await createLeave(payload);
-            console.log(payload);
-            navigate('/leaves/pending');
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error | string);
-            setErrorMessage(errorMessage);
-            toast({title: "Error", description: errorMessage, variant: "destructive"});
-        }
+        createLeaveMutation.mutate(payload, {
+            onSuccess: () => {
+                navigate('/leaves/pending');
+            },
+            onError: (error) => {
+                const errorMessage = getErrorMessage(error as Error | string);
+                setErrorMessage(errorMessage);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
+            }
+        });
     };
 
     // Fetch leave types, holidays, and user's leaves on mount
     useEffect(() => {
-        fetchLeavePolicies();
-        fetchHolidays();
-        fetchUserLeaves();
-
         if (organization?.workingDays) {
             const weekends = calculateWeekends(organization.workingDays as Week[]);
             setWeekendsDays(weekends.map(day => capitalizeFirstLetter(day.toLowerCase())));

@@ -1,34 +1,14 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
 import {Bell} from "lucide-react";
 import {NotificationPopover} from "@/modules/notification/components/NotificationPopover.tsx";
-import {getNotificationsCount} from "@/core/services/notificationService.ts";
-import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {toast} from "@/components/ui/use-toast.ts";
+import {useNotificationsCount} from "@/core/stores/notificationStore.ts";
 
 export const NotificationBell: React.FC = () => {
     const [isOpen, setIsOpen] = useState<boolean>(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [unreadCount, setUnreadCount] = useState<number>(0);
 
-    useEffect(() => {
-        const intervalId = setInterval(async () => {
-            await fetchNotificationsCount();
-        }, 30_000);
-        fetchNotificationsCount();
-        return () => clearInterval(intervalId);
-    }, []);
-
-    const fetchNotificationsCount = async () => {
-        try {
-            const response = await getNotificationsCount();
-            setUnreadCount(response.unreadCount);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            setErrorMessage(errorMessage);
-            toast({title: "Error", description: errorMessage, variant: "destructive",});
-        }
-    };
+    const {data} = useNotificationsCount();
+    const unreadCount = data?.unreadCount || 0;
 
     const toggleNotificationPanel = () => {
         setIsOpen(!isOpen);
@@ -54,7 +34,6 @@ export const NotificationBell: React.FC = () => {
 
             {isOpen && (
                 <NotificationPopover
-                    setUnreadCount={setUnreadCount}
                     onClose={toggleNotificationPanel}
                 />
             )}

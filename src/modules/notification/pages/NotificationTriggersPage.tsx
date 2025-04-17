@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card} from '@/components/ui/card';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
@@ -6,7 +6,6 @@ import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Plus, Pencil, Trash} from 'lucide-react';
 import {NotificationTrigger} from '@/core/types/notifications.ts';
-import {deleteNotificationTrigger, getNotificationTriggers} from '@/core/services/notificationService';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContent from '@/components/layout/PageContent';
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
@@ -14,51 +13,31 @@ import {toast} from "@/components/ui/use-toast.ts";
 import {Alert, AlertDescription} from "@/components/ui/alert.tsx";
 import NotificationChannelBadge from "@/modules/notification/components/NotificationChannelBadge.tsx";
 import {NotificationTriggerDeleteDialog} from "@/modules/notification/components/NotificationTriggerDeleteDialog.tsx";
+import {useDeleteNotificationTrigger, useNotificationTriggers} from '@/core/stores/notificationStore';
 
 export function NotificationTriggersPage() {
     const navigate = useNavigate();
-    const [triggers, setTriggers] = useState<NotificationTrigger[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedTrigger, setSelectedTrigger] = useState<NotificationTrigger>();
 
-    useEffect(() => {
-        const fetchTriggers = async () => {
-            try {
-                setLoading(true);
-                const response = await getNotificationTriggers();
-                setTriggers(response);
-            } catch (error) {
-                const errorMessage = getErrorMessage(error as Error);
-                setErrorMessage(errorMessage);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTriggers();
-    }, []);
+    const {data: triggers = [], isLoading, isError, error} = useNotificationTriggers();
+    const deleteNotificationTriggerMutation = useDeleteNotificationTrigger();
 
     const handleRemoveTrigger = async () => {
         if (!selectedTrigger) return;
 
-        try {
-            await deleteNotificationTrigger(selectedTrigger.id);
-
-            setTriggers((prev) => prev.filter((t) => t.id !== selectedTrigger.id));
-            toast({title: "Success", description: "Leave type removed successfully!", variant: "default"});
-        } catch (error) {
-            toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive"});
-        } finally {
-            setSelectedTrigger(null);
-            setIsDeleteDialogOpen(false);
-        }
+        deleteNotificationTriggerMutation.mutate(selectedTrigger.id, {
+            onSuccess: () => {
+                toast({title: 'Success', description: 'Trigger removed successfully!', variant: 'default'});
+            },
+            onError: (error) => {
+                toast({title: 'Error', description: getErrorMessage(error), variant: 'destructive'});
+            },
+            onSettled: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedTrigger(null);
+            }
+        });
     };
 
     return (
@@ -71,13 +50,13 @@ export function NotificationTriggersPage() {
             </PageHeader>
             <PageContent>
 
-                {errorMessage && (
+                {isError && error && (
                     <Alert variant="destructive" className="mb-4">
-                        <AlertDescription>{errorMessage}</AlertDescription>
+                        <AlertDescription>{getErrorMessage(error)}</AlertDescription>
                     </Alert>
                 )}
 
-                {loading ? (
+                {isLoading ? (
                     <div>Loading...</div>
                 ) : (
                     <Card>

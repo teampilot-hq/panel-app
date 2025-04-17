@@ -8,49 +8,22 @@ import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVal
 import {Checkbox} from "@/components/ui/checkbox";
 import {CalendarX, CloudDownload, Save, X} from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import {createHolidays, fetchHolidays} from "@/core/services/holidayService.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {country} from "@/core/types/country.ts";
 import {PageSection} from "@/components/layout/PageSection.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
+import {useCreateHolidays, useFetchHolidays} from "@/core/stores/holidayStore.ts";
 
 export default function HolidaysImportPage() {
-    const [holidays, setHolidays] = useState([]);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedCountry, setSelectedCountry] = useState("");
     const [selectedHolidays, setSelectedHolidays] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const navigate = useNavigate();
 
-    const fetchHolidaysList = async () => {
-        if (!selectedCountry) {
-            toast({
-                title: "Please select a country",
-                description: "A country selection is required to fetch holidays.",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        setIsLoading(true);
-        setHasSearched(true);
-        try {
-            const data = await fetchHolidays(selectedYear, selectedCountry);
-            setHolidays(data);
-            setSelectedHolidays([]);
-            setSelectAll(false);
-        } catch (error) {
-            toast({
-                title: "Failed to fetch holidays",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const { data: holidays = [], isFetching } = useFetchHolidays(selectedYear, selectedCountry);
+    const createHolidaysMutation = useCreateHolidays();
 
     const toggleHolidaySelection = (date: string) => {
         setSelectedHolidays(prev =>
@@ -63,40 +36,29 @@ export default function HolidaysImportPage() {
         setSelectedHolidays(selectAll ? [] : holidays.map((holiday) => holiday.date));
     };
 
-    const saveSelectedHolidays = async () => {
+    const saveSelectedHolidays = () => {
         if (selectedHolidays.length === 0) {
-            toast({
-                title: "No holidays selected",
-                description: "Please select at least one holiday to import.",
-                variant: "destructive",
-            });
+            toast({title: "No holidays selected", description: "Please select at least one holiday to import.", variant: "destructive",});
             return;
         }
 
-        setIsLoading(true);
-        try {
-            const payload = holidays
-                .filter(holiday => selectedHolidays.includes(holiday.date))
-                .map(holiday => ({
-                    description: holiday.name,
-                    date: holiday.date,
-                    country: selectedCountry,
-                }));
-            await createHolidays(payload);
-            toast({
-                title: "Success",
-                description: "Holidays have been imported successfully.",
-            });
-            navigate('/settings/official-holidays');
-        } catch (error) {
-            toast({
-                title: "Failed to import holidays",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
+        const payload = holidays
+            .filter(holiday => selectedHolidays.includes(holiday.date))
+            .map(holiday => ({
+                description: holiday.name,
+                date: holiday.date,
+                country: selectedCountry,
+            }));
+
+        createHolidaysMutation.mutate(payload, {
+            onSuccess: () => {
+                toast({ title: "Success", description: "Holidays have been imported successfully." });
+                navigate("/settings/official-holidays");
+            },
+            onError: (error) => {
+                toast({title: "Failed to import holidays", description: getErrorMessage(error), variant: "destructive",});
+            },
+        });
     };
 
     return (
@@ -125,12 +87,12 @@ export default function HolidaysImportPage() {
                             />
                         </div>
                         <Button
-                            onClick={fetchHolidaysList}
-                            disabled={isLoading || !selectedCountry}
+                            onClick={() => setHasSearched(true)}
+                            disabled={isFetching || !selectedCountry}
                             className="w-full sm:w-auto"
                         >
                             <CloudDownload className="w-4 h-4 mr-2"/>
-                            {isLoading ? 'Fetching...' : 'Fetch'}
+                            {isFetching ? 'Fetching...' : 'Fetch'}
                         </Button>
                     </div>
                 </Card>
@@ -176,17 +138,17 @@ export default function HolidaysImportPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => navigate('/settings/official-holidays')}
-                                disabled={isLoading}
+                                disabled={isFetching}
                             >
                                 <X className="w-4 h-4 mr-2"/>
                                 Cancel
                             </Button>
                             <Button
                                 onClick={saveSelectedHolidays}
-                                disabled={isLoading || selectedHolidays.length === 0}
+                                disabled={isFetching || selectedHolidays.length === 0}
                             >
                                 <Save className="w-4 h-4 mr-2"/>
-                                {isLoading ? 'Saving...' : 'Save'}
+                                {isFetching ? 'Saving...' : 'Save'}
                             </Button>
                         </div>
                     </>

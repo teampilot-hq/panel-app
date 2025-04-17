@@ -42,7 +42,7 @@ export function CalendarGrid({currentMonth, leaves, holidays = [], weekends = []
             {days.map((date) => {
                 const isHoliday = holidays.some((holiday) => dayjs(holiday).isSame(date, "day"));
                 const isWeekend = weekends.includes(dayjs(date).format("dddd"));
-                const dayLeaves = leaves.filter((leave) =>
+                const dayLeaves = leaves?.filter((leave) =>
                     dayjs(date).isBetween(leave.startAt, leave.endAt, "day", "[]")
                 );
 

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useState} from "react";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
@@ -11,99 +11,61 @@ import {CreatePolicyDialog} from "@/modules/leave/components/LeavePolicyCreateDi
 import {PageSection} from "@/components/layout/PageSection.tsx";
 import {LeavePolicyResponse, LeavePolicyStatus} from "@/core/types/leave.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {createLeavesPolicy, deleteLeavePolicy, getLeavesPolicies} from "@/core/services/leaveService.ts";
 import {LeaveTypeCycleJson} from "@/core/types/enum.ts";
+import {useCreateLeavesPolicy, useDeleteLeavePolicy, useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 
 export default function LeavePolicyList() {
-    const [leavePolicyList, setLeavePolicyList] = useState<LeavePolicyResponse[]>([]);
     const [selectedLeavePolicy, setSelectedLeavePolicy] = useState<LeavePolicyResponse | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const navigate = useNavigate();
 
-    // Fetch leave policies
-    useEffect(() => {
-        const fetchLeavePolicies = async () => {
-            try {
-                const policies = await getLeavesPolicies();
-                setLeavePolicyList(policies);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: getErrorMessage(error as Error),
-                    variant: "destructive",
-                });
-            }
-        };
-
-        fetchLeavePolicies();
-    }, []);
+    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+    const createLeavePolicyMutation = useCreateLeavesPolicy();
+    const deleteLeavePolicyMutation = useDeleteLeavePolicy();
 
     const createLeavePolicy = async (name: string) => {
-        try {
-            setIsProcessing(true);
-            setIsCreateDialogOpen(false);
+        setIsCreateDialogOpen(false);
+        setIsProcessing(true);
 
-            await createLeavesPolicy({
-                name: name,
-                status: LeavePolicyStatus.ACTIVE,
-                activatedTypes: [],
-            });
-
-            toast({
-                title: "Success",
-                description: "leave policy created successfully!",
-                variant: "default",
-            });
-
-            // Refresh leave policies after creation
-            const updatedPolicies = await getLeavesPolicies();
-            setLeavePolicyList(updatedPolicies);
-
-            // Navigate to the created policy
-            const newPolicy = updatedPolicies.find((policy) => policy.name === name);
-            if (newPolicy) {
-                navigate(`/leaves/policies/${newPolicy.id}`);
+        createLeavePolicyMutation.mutate({
+            name: name,
+            status: LeavePolicyStatus.ACTIVE,
+            activatedTypes: [],
+        }, {
+            onSuccess: (data) => {
+                setIsProcessing(false);
+                toast({title: "Success", description: "Leave policy created successfully!", variant: "default"});
+                navigate(`/leaves/policies/${data.id}`);
+            },
+            onError: (error) => {
+                setIsProcessing(false);
+                const errorMessage = getErrorMessage(error as Error | string);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
             }
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-        }
+        });
     };
 
-    const handleRemoveLeavePolicy = async () => {
+    const handleRemoveLeavePolicy = () => {
         if (!selectedLeavePolicy) return;
 
-        try {
-            setIsProcessing(true);
+        setIsProcessing(true);
+        setIsDeleteDialogOpen(false);
 
-            await deleteLeavePolicy(selectedLeavePolicy.id);
-
-            // Update the policy list locally
-            setLeavePolicyList((prev) => prev.filter((policy) => policy.id !== selectedLeavePolicy.id));
-
-            toast({
-                title: "Success",
-                description: "leave policy removed successfully!",
-                variant: "default",
-            });
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error),
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-            setSelectedLeavePolicy(null);
-            setIsDeleteDialogOpen(false);
-        }
+        deleteLeavePolicyMutation.mutate(selectedLeavePolicy.id, {
+            onSuccess: () => {
+                setIsProcessing(false);
+                setSelectedLeavePolicy(null);
+                toast({title: "Success", description: "Leave policy removed successfully.", variant: "default"});
+                navigate("/leaves/policies");
+            },
+            onError: (error) => {
+                setIsProcessing(false);
+                const errorMessage = getErrorMessage(error as Error | string);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
+            }
+        });
     };
 
     return (
@@ -124,7 +86,7 @@ export default function LeavePolicyList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {leavePolicyList.map((leavePolicy) => (
+                        {leavesPolicies?.map((leavePolicy) => (
                             <LeavePolicyRowItem
                                 key={leavePolicy.id}
                                 leavePolicy={leavePolicy}
