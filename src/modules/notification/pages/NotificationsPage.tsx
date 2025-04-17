@@ -1,14 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {getNotifications} from '@/core/services/notificationService';
+import React, {useState} from 'react';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContent from '@/components/layout/PageContent';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Bell, BellRing} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {useNavigate} from 'react-router-dom';
-import {Notification} from "@/core/types/notifications.ts";
-import {getErrorMessage} from "@/core/utils/errorHandler.ts";
-import {toast} from "@/components/ui/use-toast.ts";
 import {Alert, AlertDescription} from "@/components/ui/alert.tsx";
 import {formatTimeAgo} from "@/core/utils/timeAgo.ts";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
@@ -16,34 +12,14 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Badge} from "@/components/ui/badge.tsx";
 import NotificationChannelBadge from "@/modules/notification/components/NotificationChannelBadge.tsx";
 import NotificationStatusIcon from "@/modules/notification/components/NotificationStatusIcon.tsx";
+import {useNotifications} from "@/core/stores/notificationStore.ts";
 
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                setLoading(true);
-                setErrorMessage(null);
-                const response = await getNotifications({}, 1, 10);
-                setNotifications(response.contents);
-            } catch (error) {
-                setErrorMessage(getErrorMessage(error as Error));
-                toast({
-                    title: "Error loading notifications",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchNotifications();
-    }, []);
+    const { data, isLoading, error } = useNotifications({}, 1, 10);
+    const notifications = data?.contents ?? [];
 
     const toggleExpand = (id: number) => {
         setExpandedId(expandedId === id ? null : id);
@@ -58,14 +34,14 @@ export default function NotificationsPage() {
                 </Button>
             </PageHeader>
             <PageContent>
-                {errorMessage && (
+                {error && (
                     <Alert variant="destructive" className="mb-4 max-w-4xl mx-auto">
-                        <AlertDescription>{errorMessage}</AlertDescription>
+                        <AlertDescription>{error.message}</AlertDescription>
                     </Alert>
                 )}
 
                 <ScrollArea className="mx-auto">
-                    {loading ? (
+                    {isLoading ? (
                         <div>Loading...</div>
                     ) : notifications.length > 0 ? (
                         notifications.map((notification) => (

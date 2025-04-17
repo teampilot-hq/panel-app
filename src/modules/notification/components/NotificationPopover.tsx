@@ -1,52 +1,39 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Card, CardContent, CardHeader} from "@/components/ui/card.tsx";
 import {Bell, Check, X} from "lucide-react";
 import {Notification, NotificationStatus} from '@/core/types/notifications.ts';
 import {formatTimeAgo} from "@/core/utils/timeAgo.ts";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
-import {createNotificationRead, getNotifications} from "@/core/services/notificationService.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {toast} from "@/components/ui/use-toast.ts";
+import {useCreateNotificationRead, useNotifications} from "@/core/stores/notificationStore.ts";
+import {useQueryClient} from "@tanstack/react-query";
 
 interface NotificationPanelProps {
     onClose: () => void;
-    setUnreadCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export const NotificationPopover = ({onClose, setUnreadCount}: NotificationPanelProps) => {
+export const NotificationPopover = ({onClose}: NotificationPanelProps) => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<Notification>();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
+    const { data, refetch } = useNotifications({}, 1, 10);
+    const notifications = data?.contents ?? [];
+    const markReadMutation = useCreateNotificationRead();
+    const queryClient = useQueryClient();
 
-    const fetchNotifications = async () => {
-        try {
-            const response = await getNotifications({}, 1, 10);
-            setNotifications(response.contents);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            setErrorMessage(errorMessage);
-            toast({title: "Error", description: errorMessage, variant: "destructive",});        }
-    };
-
-    const markAsRead = async (id: number) => {
-        try {
-            await createNotificationRead([id]);
-
-            setNotifications((prevNotifications) =>
-                prevNotifications.map((n) => n.id === id ? {...n, status: NotificationStatus.READ} : n)
-            );
-            setUnreadCount((prev) => prev - 1);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            setErrorMessage(errorMessage);
-            toast({title: "Error", description: errorMessage, variant: "destructive",});
-        }
+    const markAsRead = (id: number) => {
+        markReadMutation.mutate([id], {
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+                refetch();
+            },
+            onError: (error) => {
+                const errorMessage = getErrorMessage(error);
+                toast({title: "Error", description: errorMessage, variant: "destructive"});
+            },
+        });
     };
 
     const markAllAsRead = async () => {
@@ -57,14 +44,18 @@ export const NotificationPopover = ({onClose, setUnreadCount}: NotificationPanel
 
             if (unreadIds.length === 0) return;
 
-            await createNotificationRead(unreadIds);
-            setNotifications((prevNotifications) =>
-                prevNotifications.map((n) => ({...n, status: NotificationStatus.READ}))
-            );
-            setUnreadCount(0);
+            markReadMutation.mutate(unreadIds, {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+                    refetch();
+                },
+                onError: (error) => {
+                    const errorMessage = getErrorMessage(error);
+                    toast({title: "Error", description: errorMessage, variant: "destructive"});
+                }
+            })
         } catch (error) {
             const errorMessage = getErrorMessage(error as Error);
-            setErrorMessage(errorMessage);
             toast({title: "Error", description: errorMessage, variant: "destructive",});
         }
     };

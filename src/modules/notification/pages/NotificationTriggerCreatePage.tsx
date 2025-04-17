@@ -1,40 +1,25 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card, CardContent} from '@/components/ui/card';
 import {toast} from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import PageContent from '@/components/layout/PageContent';
-import {EventSchema} from '@/core/types/notifications.ts';
-import {createNotificationTrigger, getNotificationEventSchemas} from '@/core/services/notificationService';
 import {getErrorMessage} from '@/core/utils/errorHandler';
 import {PageSection} from '@/components/layout/PageSection.tsx';
 import NotificationTriggerForm, {TriggerInputs} from "@/modules/notification/components/NotificationTriggerForm.tsx";
+import {useCreateNotificationTrigger, useNotificationEventSchemas} from "@/core/stores/notificationStore.ts";
 
 export default function NotificationTriggerCreatePage() {
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [eventSchemas, setEventSchemas] = useState<EventSchema[]>(null);
 
-    useEffect(() => {
-        const fetchEventSchemas = async () => {
-            try {
-                const schemas = await getNotificationEventSchemas();
-                setEventSchemas(schemas);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Failed to fetch event schemas",
-                    variant: "destructive",
-                });
-            }
-        };
-        fetchEventSchemas();
-    }, []);
+    const { data: eventSchemas } = useNotificationEventSchemas();
+    const createTriggerMutation = useCreateNotificationTrigger();
 
     const onSubmit = async (data: TriggerInputs) => {
         try {
             setIsProcessing(true);
-            await createNotificationTrigger({
+            createTriggerMutation.mutate({
                 title: data.title,
                 name: data.name,
                 textTemplate: data.textTemplate,
@@ -60,9 +45,7 @@ export default function NotificationTriggerCreatePage() {
         }
     };
 
-    if(!eventSchemas) {
-        return (<div>Loading ...</div>);
-    }
+    if (!eventSchemas) return <div>Loading...</div>;
 
     return (
         <>
