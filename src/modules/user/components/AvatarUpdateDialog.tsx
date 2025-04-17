@@ -1,6 +1,5 @@
 import {AssetResponse, UserUpdateRequest} from "@/core/types/user.ts";
 import React, {useState} from "react";
-import {createAssets, updateUser} from "@/core/services/userService.ts";
 import {toast} from "@/components/ui/use-toast.ts";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog.tsx";
@@ -8,6 +7,7 @@ import {Slider} from "@/components/ui/slider.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {dataURLtoFile} from "@/core/utils/file.ts";
 import AvatarEditor from "react-avatar-editor";
+import {useUpdateUser, useUploadAssets} from "@/core/stores/userStore.ts";
 
 type ChangePictureDialogProps = {
     initialImageUrl: string;
@@ -19,6 +19,9 @@ export function AvatarUpdateDialog({initialImageUrl, onChange}: ChangePictureDia
     const [isProcessing, setIsProcessing] = useState(false);
     let [zoom, setZoom] = useState(2);
     const setEditorRef = (ed: AvatarEditor | null) => editor = ed;
+
+    const updateUserMutation = useUpdateUser();
+    const uploadAssetsMutation = useUploadAssets();
 
     const handleSlider = (value: number[]) => {
         if (value.length > 0) {
@@ -42,30 +45,44 @@ export function AvatarUpdateDialog({initialImageUrl, onChange}: ChangePictureDia
             const file = dataURLtoFile(base64Image, "profile-image.jpg");
             const files: File[] = [file];
 
-            //Upload the image
-            const assetResponse: AssetResponse[] = await createAssets("PROFILE_IMAGE", files);
+            // Upload assets via the mutation
+            uploadAssetsMutation.mutate(
+                {bucket: "PROFILE_IMAGE", files},
+                {
+                    onSuccess: (assetResponse) => {
+                        const payload: UserUpdateRequest = {avatarAssetId: assetResponse[0].id,};
 
-            //Update the user with the uploaded asset ID
-            const payload: UserUpdateRequest = {
-                avatarAssetId: assetResponse[0].id,
-            };
-            const updatedUser = await updateUser("mine", payload);
-            setIsProcessing(false);
-            onChange(updatedUser.avatar);
-            toast({
-                title: "Success",
-                description: "ProfilePage picture updated successfully!",
-                variant: "default",
-            });
+                        // Update the user avatar via the mutation
+                        updateUserMutation.mutate(
+                            payload,
+                            {
+                                onSuccess: (updatedUser) => {
+                                    onChange(updatedUser.avatar);
+                                    toast({title: "Success", description: "Profile picture updated successfully!",});
+                                },
+                                onError: (error) => {
+                                    toast({
+                                        title: "Error",
+                                        description: getErrorMessage(error),
+                                        variant: "destructive",
+                                    });
+                                },
+                                onSettled: () => {
+                                    setIsProcessing(false);
+                                },
+                            }
+                        );
+                    },
+                    onError: (error) => {
+                        toast({title: "Upload Failed", description: getErrorMessage(error), variant: "destructive",});
+                        setIsProcessing(false);
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error:", error);
             setIsProcessing(false);
-            const errorMessage = getErrorMessage(error as Error | string);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
+            toast({title: "Error", description: getErrorMessage(error as Error), variant: "destructive",});
         }
     };
 

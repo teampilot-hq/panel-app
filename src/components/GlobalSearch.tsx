@@ -1,55 +1,32 @@
-import React, {useCallback, useContext, useEffect, useState} from 'react'
+import React, {useContext, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,} from '@/components/ui/command'
 import {Search, TreePalm} from 'lucide-react'
 import {Button} from './ui/button'
-import {getUsers} from '@/core/services/userService'
-import {UserResponse} from '@/core/types/user'
-import {LeavePolicyResponse} from '@/core/types/leave'
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {getAccessibleNavigationItems} from "@/core/utils/navigation.ts";
 import {UserRole} from "@/core/types/enum.ts";
 import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
+import {useUsers} from "@/core/stores/userStore.ts";
 
 export function GlobalSearch() {
     const [open, setOpen] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const [users, setUsers] = useState<UserResponse[]>([])
-    const [policies, setPolicies] = useState<LeavePolicyResponse[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const navigate = useNavigate();
     const {user} = useContext(UserContext);
     const accessibleItems = user ? getAccessibleNavigationItems(user.role) : [];
 
-    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
-
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true)
-            const [usersData] = await Promise.all([
-                getUsers(0, 100),
-            ])
-            setUsers(usersData.contents)
-        } catch (error) {
-            console.error('Error fetching data:', error)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        if (open) {
-            fetchData()
-        }
-    }, [open, fetchData])
+    const {data : leavesPolicies} = useLeavesPolicies();
+    const { data: usersData, isPending } = useUsers(0, 100);
+    const users = usersData?.contents;
 
     const onSelect = (path: string) => {
         setOpen(false)
         navigate(path)
     }
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = users?.filter(user => {
         if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return (
@@ -78,7 +55,7 @@ export function GlobalSearch() {
                 <CommandInput placeholder="Type to search..." value={searchTerm} onValueChange={setSearchTerm}/>
                 <CommandList className="max-h-[80vh] overflow-auto">
                     <CommandEmpty>No results found.</CommandEmpty>
-                    {loading ? (
+                    {isPending ? (
                         <div className="space-y-1 overflow-hidden px-1 py-2">
                             <div className="animate-pulse space-y-2">
                                 {[...Array(5)].map((_, i) => (

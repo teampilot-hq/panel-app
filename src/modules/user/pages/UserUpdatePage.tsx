@@ -4,10 +4,9 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {toast} from "@/components/ui/use-toast";
-import {getUser, updateUser} from "@/core/services/userService";
 import {TeamResponse} from "@/core/types/team.ts";
 import {LeavePolicyResponse} from "@/core/types/leave.ts";
-import {UserResponse, UserUpdateRequest} from "@/core/types/user.ts";
+import {UserUpdateRequest} from "@/core/types/user.ts";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -23,6 +22,7 @@ import dayjs from "dayjs";
 import {Calendar} from "@/components/ui/calendar.tsx";
 import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 import {useTeams} from "@/core/stores/teamStore.ts";
+import {useUpdateUser, useUser} from "@/core/stores/userStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(1, {message: "First Name is required"}),
@@ -38,12 +38,13 @@ const FormSchema = z.object({
 export default function UserUpdatePage() {
     const {id} = useParams();
     const navigate = useNavigate();
-    const [employee, setEmployee] = useState<UserResponse | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const location = useLocation();
 
-    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+    const {data : leavesPolicies} = useLeavesPolicies();
     const {data: teams} = useTeams();
+    const {data: employee, error: userError} = useUser(id!);
+    const updateUserMutation = useUpdateUser(id!);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -61,33 +62,26 @@ export default function UserUpdatePage() {
 
     const {reset} = form;
 
-    // Fetch employee details
     useEffect(() => {
-        const fetchEmployeeDetails = async () => {
-            try {
-                const employeeData = await getUser(id!);
-                setEmployee(employeeData);
-                reset({
-                    firstName: employeeData.firstName,
-                    lastName: employeeData.lastName,
-                    email: employeeData.email,
-                    phone: employeeData.phone || "",
-                    teamId: employeeData.team.id,
-                    leavePolicyId: employeeData.leavePolicy.id,
-                    role: employeeData.role,
-                    joinedAt: new Date(employeeData.joinedAt)
-                });
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Failed to fetch employee details.",
-                    variant: "destructive",
-                });
-            }
-        };
+        if (employee) {
+            reset({
+                firstName: employee.firstName,
+                lastName: employee.lastName,
+                email: employee.email,
+                phone: employee.phone || "",
+                teamId: employee.team.id,
+                leavePolicyId: employee.leavePolicy.id,
+                role: employee.role,
+                joinedAt: new Date(employee.joinedAt)
+            });
+        }
+    }, [employee, reset]);
 
-        fetchEmployeeDetails();
-    }, [id, reset]);
+    useEffect(() => {
+        if (userError) {
+            toast({title: "Error", description: "Failed to fetch employee details.", variant: "destructive",});
+        }
+    }, [userError]);
 
     const onSubmit = async (data: z.infer<typeof FormSchema>) => {
         const payload: UserUpdateRequest = {
@@ -103,7 +97,7 @@ export default function UserUpdatePage() {
 
         try {
             setIsProcessing(true);
-            await updateUser(id!, payload);
+            await updateUserMutation.mutateAsync(payload);
             toast({
                 title: "Success",
                 description: "Employee updated successfully!",

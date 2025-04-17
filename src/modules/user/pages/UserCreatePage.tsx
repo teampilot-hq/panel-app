@@ -1,7 +1,6 @@
 import React, {useContext, useState} from "react";
 import {useForm, UseFormReturn} from "react-hook-form";
 import {useNavigate} from "react-router-dom";
-import {createUser} from "@/core/services/userService";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
@@ -25,6 +24,7 @@ import { Calendar } from "@/components/ui/calendar"
 import dayjs from "dayjs";
 import {useLeavesPolicies} from "@/core/stores/leavePoliciesStore.ts";
 import {useTeams} from "@/core/stores/teamStore.ts";
+import {useCreateUser} from "@/core/stores/userStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(2, { message: "First Name must be over 2 characters" }).max(20, { message: "First Name must be under 20 characters" }),
@@ -44,8 +44,9 @@ export default function UserCreatePage() {
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-    const {data : leavesPolicies, isLoading, isError, error, isFetching, refetch} = useLeavesPolicies();
+    const {data : leavesPolicies} = useLeavesPolicies();
     const {data: teams} = useTeams();
+    const createUserMutation = useCreateUser();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -79,25 +80,22 @@ export default function UserCreatePage() {
         };
 
         setIsProcessing(true);
-        createUser(payload)
-            .then(() => {
-                setIsProcessing(false);
-                toast({
-                    title: "Success",
-                    description: "Employee created successfully!",
-                    variant: "default",
-                });
-                navigate("/users");
-            })
-            .catch((error) => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
+
+        createUserMutation.mutate(
+            payload,
+            {
+                onSuccess: () => {
+                    toast({title: "Success", description: "Employee created successfully!"});
+                    navigate('/users');
+                },
+                onError: (error) => {
+                    toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (

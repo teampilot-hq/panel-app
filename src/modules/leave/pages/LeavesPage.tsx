@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card} from "@/components/ui/card";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
@@ -17,18 +17,16 @@ import PaginationComponent from "@/components/Pagination.tsx";
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
 import LeaveDuration from "@/modules/leave/components/LeaveDuration.tsx";
 import LeaveFilterForm from "@/modules/leave/components/LeaveFilterForm.tsx";
-import {UserResponse} from "@/core/types/user.ts";
-import {getUsers} from "@/core/services/userService.ts";
 import LeaveStatusBadge from "@/modules/leave/components/LeaveStatusBadge.tsx";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import { useLeaves, useUpdateLeaveStatus} from "@/core/stores/leavesStore.ts";
 import {useTeams} from "@/core/stores/teamStore.ts";
+import {useUsers} from "@/core/stores/userStore.ts";
 
 export default function LeavesPage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [selectedLeave, setSelectedLeave] = useState<LeaveResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
-    const [users, setUsers] = useState<UserResponse[] | null>(null);
     const {user} = useContext(UserContext);
     const isTeamAdmin = user?.role === UserRole.TEAM_ADMIN;
     const assignedTeamId = user?.team?.id;
@@ -37,23 +35,11 @@ export default function LeavesPage() {
         teamId: isTeamAdmin ? assignedTeamId : null
     });
 
-    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves(filters, currentPage);
+    const {data : leaves} = useLeaves(filters, currentPage);
     const updateLeaveStatusMutation = useUpdateLeaveStatus();
     const {data: teams} = useTeams();
-
-    const fetchUsers = async () => {
-        try {
-            const response = await getUsers(0, 100);
-            setUsers(response.contents);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error as Error);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive"
-            });
-        }
-    }
+    const { data: usersData } = useUsers(0, 100);
+    const users = usersData?.contents;
 
     const handleLeavesFilter = (newFilters: GetLeavesFilter) => {
         setFilters(prevFilters => ({
@@ -63,11 +49,6 @@ export default function LeavesPage() {
         }));
         setCurrentPage(0);
     };
-
-    // Fetch pending leave requests
-    useEffect(() => {
-        fetchUsers();
-    }, [currentPage, filters]);
 
     // View request details
     const handleRowClick = (request: LeaveResponse) => {
@@ -114,7 +95,7 @@ export default function LeavesPage() {
                         </TableHeader>
                         <TableBody>
                             {leaves?.contents.length ? (
-                                leaves.contents.map((request) => (
+                                leaves?.contents.map((request) => (
                                     <LeaveRow
                                         key={request.id}
                                         leave={request}

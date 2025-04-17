@@ -85,7 +85,7 @@ export default function LeaveFilterForm({onFilter, teams, users}: FilterEmployee
                                 {user?.role === UserRole.ORGANIZATION_ADMIN ? (
                                     <>
                                         <SelectItem key="all" value="ALL">All Teams</SelectItem>
-                                        {teams.map(team => (
+                                        {teams?.map(team => (
                                             <SelectItem key={team.id} value={team.id.toString()}>
                                                 {team.name}
                                             </SelectItem>
@@ -93,7 +93,7 @@ export default function LeaveFilterForm({onFilter, teams, users}: FilterEmployee
                                     </>
                                 ) : isTeamAdmin && assignedTeamId ? (
                                     <SelectItem key={assignedTeamId} value={assignedTeamId.toString()}>
-                                        {teams.find(team => team.id === assignedTeamId)?.name || "Your Team"}
+                                        {teams?.find(team => team.id === assignedTeamId)?.name || "Your Team"}
                                     </SelectItem>
                                 ) : null}
                             </SelectContent>

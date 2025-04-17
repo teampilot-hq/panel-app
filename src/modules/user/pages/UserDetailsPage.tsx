@@ -1,10 +1,6 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {useLocation, useNavigate, useParams} from "react-router-dom";
-import {toast} from "@/components/ui/use-toast";
-import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Card} from "@/components/ui/card";
-import {UserResponse} from "@/core/types/user.ts";
-import {getUser} from "@/core/services/userService.ts";
 import LeaveList from "@/modules/leave/components/LeaveList.tsx";
 import UserLeaveBalanceItem from "@/modules/home/components/UserLeaveBalanceItem.tsx";
 import UserDetailsCard from "@/modules/user/components/UserDetailsCard.tsx";
@@ -16,37 +12,18 @@ import {PencilIcon} from "@heroicons/react/24/outline";
 import {useLeaves} from "@/core/stores/leavesStore.ts";
 import {useLeavesPolicy} from "@/core/stores/leavePoliciesStore.ts";
 import {useLeaveBalance} from "@/core/stores/leaveTypesStore.ts";
+import {useUser} from "@/core/stores/userStore.ts";
 
 export default function UserDetailsPage() {
     const {id} = useParams();
-    const [employeeDetails, setEmployeeDetails] = useState<UserResponse | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(0);
     const location = useLocation();
     const navigate = useNavigate();
 
-    const {data : leaves, isLoading, isError, error, isFetching, refetch} = useLeaves({userId: Number(id)}, currentPage);
-    const {data : leavesPolicy} = useLeavesPolicy(employeeDetails?.leavePolicy?.id);
+    const {data: employee} = useUser(id!);
+    const {data : leaves} = useLeaves({userId: Number(id)}, currentPage);
+    const {data : leavesPolicy} = useLeavesPolicy(employee?.leavePolicy?.id);
     const {data: leaveBalance} = useLeaveBalance(Number(id))
-
-    // Unified data fetching
-    const fetchEmployeeData = async () => {
-        try {
-            const userDetails = await getUser(id!);
-            setEmployeeDetails(userDetails);
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: getErrorMessage(error as Error | string),
-                variant: "destructive",
-            });
-        }
-    };
-
-    useEffect(() => {
-        if (id) {
-            fetchEmployeeData();
-        }
-    }, [id, currentPage]);
 
     const backButtonPath = location.state?.from || "/leaves";
 
@@ -66,7 +43,7 @@ export default function UserDetailsPage() {
                 </Button>
             </PageHeader>
             <PageContent>
-                        <UserDetailsCard employeeDetails={employeeDetails} leavePolicy={leavesPolicy}/>
+                        <UserDetailsCard employeeDetails={employee} leavePolicy={leavesPolicy}/>
 
                         <section>
                             <PageSection title="Leave Balance"

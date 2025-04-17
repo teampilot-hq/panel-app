@@ -3,7 +3,6 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useForm, UseFormReturn} from "react-hook-form";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {updateUserPassword} from "@/core/services/userService";
 import {toast} from "@/components/ui/use-toast";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts";
 import {Button} from "@/components/ui/button";
@@ -11,10 +10,11 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/
 import {Input} from "@/components/ui/input";
 import {Card} from "@/components/ui/card";
 import {ChangePasswordRequest} from "@/core/types/user.ts";
-import {UserContext} from "@/contexts/UserContext.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import {Save, X} from "lucide-react";
+import {useUpdateUserPassword} from "@/core/stores/userStore.ts";
+import {UserContext} from "@/contexts/UserContext.tsx";
 
 const FormSchema = z
     .object({
@@ -43,6 +43,8 @@ export default function PasswordChangePage() {
         },
     });
 
+    const updateUserPasswordMutation = useUpdateUserPassword(user.id);
+
     const {handleSubmit} = form;
 
     const onSubmit = (data: z.infer<typeof FormSchema>) => {
@@ -52,25 +54,23 @@ export default function PasswordChangePage() {
         };
 
         setIsProcessing(true);
-        updateUserPassword(payload, user.id)
-            .then(() => {
-                setIsProcessing(false);
-                toast({
-                    title: "Success",
-                    description: "Password updated successfully!",
-                    variant: "default",
-                });
-                navigate('/settings');
-            })
-            .catch(error => {
-                setIsProcessing(false);
-                const errorMessage = getErrorMessage(error);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            });
+
+        updateUserPasswordMutation.mutate(
+            payload,
+            {
+                onSuccess: () => {
+                    toast({ title: "Success", description: "Password updated successfully!" });
+                    navigate('/settings');
+                },
+                onError: (error) => {
+                    const message = getErrorMessage(error);
+                    toast({ title: "Error", description: message, variant: "destructive" });
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     };
 
     return (

@@ -1,8 +1,7 @@
-import React, {useContext, useEffect, useState} from 'react'
+import React, {useContext, useState} from 'react'
 import {useForm, UseFormReturn} from "react-hook-form"
 import {zodResolver} from "@hookform/resolvers/zod"
 import {z} from "zod"
-import {getUser, updateUser} from "@/core/services/userService";
 import {getErrorMessage} from "@/core/utils/errorHandler.ts"
 import {AssetResponse, UserUpdateRequest} from '@/core/types/user.ts'
 import {Camera, Save, X} from "lucide-react"
@@ -16,6 +15,7 @@ import {Button} from "@/components/ui/button.tsx";
 import PageContent from "@/components/layout/PageContent.tsx";
 import PageHeader from "@/components/layout/PageHeader.tsx";
 import UserAvatar from "@/modules/user/components/UserAvatar.tsx";
+import {useUpdateUser} from "@/core/stores/userStore.ts";
 
 const FormSchema = z.object({
     firstName: z.string().min(2, {
@@ -34,65 +34,39 @@ export default function ProfilePage() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false)
     const {user, setUser} = useContext(UserContext);
     const [selectedAvatar, setSelectedAvatar] = useState(null);
+    const updateUserMutation = useUpdateUser();
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            firstName: "",
-            lastName: "",
+            firstName: user?.firstName || "",
+            lastName: user?.lastName || "",
         },
     });
 
-    const {reset} = form;
-
-    // Fetch employee information on mount
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const user = await getUser();
-                setUser(user);
-                reset({
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                });
-            } catch (error) {
-                const errorMessage = getErrorMessage(error as Error | string);
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            }
-        };
-        fetchUserData();
-    }, [reset]);
-
     // Handle form submission
     const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-        try {
-            const payload: UserUpdateRequest = {
-                firstName: data.firstName,
-                lastName: data.lastName,
-            };
-            setIsProcessing(true);
-            const updateUserResponse = await updateUser("mine", payload);
-            setIsProcessing(false);
-            setUser(updateUserResponse);
-            toast({
-                title: "Success",
-                description: "ProfilePage updated successfully!",
-                variant: "default",
-            });
-        } catch (error) {
-            setIsProcessing(false);
-            console.error("Error:", error);
-            const errorMessage = getErrorMessage(error as Error | string);
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        }
+        const payload: UserUpdateRequest = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+        };
+        setIsProcessing(true);
+
+        updateUserMutation.mutate(
+            payload,
+            {
+                onSuccess: () => {
+                    toast({ title: "Success", description: "Profile updated successfully!" });
+                },
+                onError: (error) => {
+                    const message = getErrorMessage(error);
+                    toast({ title: "Error", description: message, variant: "destructive" });
+                },
+                onSettled: () => {
+                    setIsProcessing(false);
+                }
+            }
+        );
     }
 
     // Handle file change for the profile picture

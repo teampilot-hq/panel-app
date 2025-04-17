@@ -58,7 +58,7 @@ export default function UserFilterForm({onFilter}: FilterEmployeesFormProps) {
                                 {user?.role === UserRole.ORGANIZATION_ADMIN ? (
                                     <>
                                         <SelectItem key="all" value="ALL">All Teams</SelectItem>
-                                        {teams.map((team) => (
+                                        {teams?.map((team) => (
                                             <SelectItem key={team.id} value={team.id.toString()}
                                                         className="cursor-pointer">
                                                 {team.name}
