@@ -29,7 +29,8 @@ export function useCreateHolidays() {
     return useMutation({
         mutationFn: createHolidays,
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['holidaysOverview'] });
             queryClient.invalidateQueries({ queryKey: ['holidays'] });
-        },
+            },
     });
 }

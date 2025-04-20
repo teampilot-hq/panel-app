@@ -40,6 +40,7 @@ export const UserContextProvider = ({ children }: UserContextProviderType) => {
     const isAuthenticated = (): boolean => {
         return accessToken != null && accessToken !== "";
     };
+    const isAuth = isAuthenticated();
 
     const authenticate = (_accessToken: string | null) => {
         setAccessToken(_accessToken);
@@ -52,14 +53,13 @@ export const UserContextProvider = ({ children }: UserContextProviderType) => {
     };
 
     useEffect(() => {
-        if (fetchedUser) {
+        if (isAuth && fetchedUser) {
             setUser(fetchedUser);
         }
         if (error) {
-            const errorMessage = getErrorMessage(error);
-            toast({title: "Error", description: errorMessage, variant: "destructive",});
+            toast({title: "Error", description: getErrorMessage(error), variant: "destructive",});
         }
-    }, [fetchedUser, error]);
+    }, [fetchedUser, error, isAuth, accessToken]);
 
     const contextValue = {
         user: user,

@@ -8,7 +8,7 @@ import {
 import {Button} from "@/components/ui/button.tsx";
 import {Check, Ellipsis, X} from "lucide-react";
 import React, {useContext, useState} from "react";
-import {Link, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {UserContext} from "@/contexts/UserContext.tsx";
 import {
     Dialog,
@@ -35,7 +35,7 @@ export default function SidebarAccountDropdown({isActive}: AccountDropdownProps)
     };
 
     return (
-        <Link className='p-4' to={"profile"}>
+        <div className="p-4">
             <DropdownMenu>
                 <DropdownMenuTrigger className="w-full">
                     <div
@@ -60,7 +60,7 @@ export default function SidebarAccountDropdown({isActive}: AccountDropdownProps)
             </DropdownMenu>
 
             {signOut && <SignOut signOut={signOut} setSignOut={setSignOut}/>}
-        </Link>
+        </div>
     )
 }
 

@@ -1,15 +1,25 @@
-import {useMutation} from "@tanstack/react-query";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {signin, signup, sendGeneratedPasswordEmail} from "@/core/services/authService.ts";
 
 export function useSignin() {
+    const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: signin
+        mutationFn: signin,
+        onSuccess: () => {
+            queryClient.removeQueries({ queryKey: ['user'] });
+        },
     });
 }
 
 export function useSignup() {
+    const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: signup
+        mutationFn: signup,
+        onSuccess: () => {
+            queryClient.removeQueries({ queryKey: ['user'] });
+        },
     });
 }
 
