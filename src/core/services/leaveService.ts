@@ -1,4 +1,4 @@
-import axiosInstance from "@/core/services/httpService.ts";
+import fetchClient from "@/core/services/httpService.ts";
 import {
     GetLeavesFilter,
     LeaveCheckRequest,
@@ -18,90 +18,67 @@ import {PagedResponse} from "@/core/types/common.ts";
 
 const baseURL = '/leaves';
 
-async function getLeaves(filter: GetLeavesFilter = {}, pageNumber: number = 0): Promise<PagedResponse<LeaveResponse>> {
-    const response = await axiosInstance.get(baseURL, {
-        params: {...filter, pageNumber}
-    });
-    return response.data;
+export async function getLeaves(filter: GetLeavesFilter = {}, pageNumber: number = 0): Promise<PagedResponse<LeaveResponse>> {
+    const queryObject: Record<string, string> = {
+        pageNumber: pageNumber.toString(),
+        ...(filter.teamId !== undefined ? { teamId: filter.teamId.toString() } : {}),
+        ...(filter.userId !== undefined ? { userId: filter.userId.toString() } : {}),
+        ...(filter.status !== undefined ? { status: filter.status } : {}),
+    };
+
+    const queryParams = new URLSearchParams(queryObject).toString();
+
+    return await fetchClient.get(`${baseURL}?${queryParams}`);
 }
 
-async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
-    const response = await axiosInstance.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
-    return response.data;
+export async function getLeavesBalance(userId: number | null = null): Promise<UserLeaveBalanceResponse[]> {
+    return await fetchClient.get(`${baseURL}/${userId ? userId : 'mine'}/balance`);
 }
 
-async function updateLeavesStatus(payload: LeaveUpdateRequest, id: number): Promise<LeaveResponse> {
-    const response = await axiosInstance.put(`${baseURL}/${id}`, payload);
-    return response.data;
+export async function updateLeavesStatus(payload: LeaveUpdateRequest, id: number): Promise<LeaveResponse> {
+    return await fetchClient.put(`${baseURL}/${id}`, payload);
 }
 
-async function createLeave(payload: LeaveCreateRequest): Promise<LeaveResponse> {
-    const response = await axiosInstance.post(baseURL, payload);
-    return response.data;
+export async function createLeave(payload: LeaveCreateRequest): Promise<LeaveResponse> {
+    return await fetchClient.post(baseURL, payload);
 }
 
-async function getLeavesPolicies(): Promise<LeavePolicyResponse[]> {
-    const response = await axiosInstance.get(`${baseURL}/policies`);
-    return response.data;
+export async function getLeavesPolicies(): Promise<LeavePolicyResponse[]> {
+    return await fetchClient.get(`${baseURL}/policies`);
 }
 
-async function getLeavesPolicy(id: number): Promise<LeavePolicyResponse> {
-    const response = await axiosInstance.get(`${baseURL}/policies/${id}`);
-    return response.data;
+export async function getLeavesPolicy(id: number): Promise<LeavePolicyResponse> {
+    return await fetchClient.get(`${baseURL}/policies/${id}`);
 }
 
-async function createLeavesPolicy(payload: LeavePolicyCreateRequest): Promise<LeavePolicyResponse> {
-    const response = await axiosInstance.post(`${baseURL}/policies`, payload);
-    return response.data;
+export async function createLeavesPolicy(payload: LeavePolicyCreateRequest): Promise<LeavePolicyResponse> {
+    return await fetchClient.post(`${baseURL}/policies`, payload);
 }
 
-async function deleteLeavePolicy(id: number) {
-    const response = await axiosInstance.delete(`${baseURL}/policies/${id}`);
-    return response.data;
+export async function deleteLeavePolicy(id: number) {
+    return await fetchClient.delete(`${baseURL}/policies/${id}`);
 }
 
-async function updateLeavePolicy(payload: LeavePolicyUpdateRequest, id: number): Promise<LeavePolicyResponse> {
-    const response = await axiosInstance.put(`${baseURL}/policies/${id}`, payload);
-    return response.data;
+export async function updateLeavePolicy(payload: LeavePolicyUpdateRequest, id: number): Promise<LeavePolicyResponse> {
+    return await fetchClient.put(`${baseURL}/policies/${id}`, payload);
 }
 
-async function getLeavesTypes(): Promise<LeaveTypeResponse[]> {
-    const response = await axiosInstance.get(`${baseURL}/types`);
-    return response.data;
+export async function getLeavesTypes(): Promise<LeaveTypeResponse[]> {
+    return await fetchClient.get(`${baseURL}/types`);
 }
 
-async function deleteLeaveType(id: number) {
-    const response = await axiosInstance.delete(`${baseURL}/types/${id}`);
-    return response.data;
+export async function deleteLeaveType(id: number) {
+    return await fetchClient.delete(`${baseURL}/types/${id}`);
 }
 
-async function updateLeaveType(payload: LeaveTypeUpdateRequest, id: number): Promise<LeaveTypeResponse> {
-    const response = await axiosInstance.put(`${baseURL}/types/${id}`, payload);
-    return response.data;
+export async function updateLeaveType(payload: LeaveTypeUpdateRequest, id: number): Promise<LeaveTypeResponse> {
+    return await fetchClient.put(`${baseURL}/types/${id}`, payload);
 }
 
-async function createLeavesType(payload: LeaveTypeCreateRequest): Promise<LeaveTypeResponse> {
-    const response = await axiosInstance.post(`${baseURL}/types`, payload);
-    return response.data;
+export async function createLeavesType(payload: LeaveTypeCreateRequest): Promise<LeaveTypeResponse> {
+    return await fetchClient.post(`${baseURL}/types`, payload);
 }
 
 export async function createLeavesCheck(payload: LeaveCheckRequest): Promise<LeaveCheckResponse> {
-    const response = await axiosInstance.post(`${baseURL}/check`, payload);
-    return response.data;
-}
-
-export {
-    getLeaves,
-    updateLeavesStatus,
-    createLeave,
-    getLeavesPolicies,
-    createLeavesPolicy,
-    updateLeavePolicy,
-    deleteLeavePolicy,
-    getLeavesBalance,
-    getLeavesTypes,
-    deleteLeaveType,
-    updateLeaveType,
-    createLeavesType,
-    getLeavesPolicy
+    return await fetchClient.post(`${baseURL}/check`, payload);
 }

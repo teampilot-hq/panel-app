@@ -1,21 +1,16 @@
 import {AuthenticationResponse, LoginRequest, RegistrationRequest} from "@/core/types/authentication.ts";
-import axiosInstance from './httpService.ts';
+import fetchClient from "./httpService.ts";
 
 const baseURL = '/auth';
 
-async function signup(payload: RegistrationRequest): Promise<AuthenticationResponse> {
-    const response = await axiosInstance.post(`${baseURL}/register`, payload);
-    return response.data;
+export async function signup(payload: RegistrationRequest): Promise<AuthenticationResponse> {
+    return await fetchClient.post(`${baseURL}/register`, payload);
 }
 
-async function signin(data: LoginRequest): Promise<AuthenticationResponse> {
-    const response = await axiosInstance.post(`${baseURL}/login`, data);
-    return response.data;
+export async function signin(data: LoginRequest): Promise<AuthenticationResponse> {
+    return await fetchClient.post(`${baseURL}/login`, data);
 }
 
-async function sendGeneratedPasswordEmail(email: string): Promise<void> {
-    const response = await axiosInstance.post(`${baseURL}/forget-password`, {email});
-    return response.data;
+export async function sendGeneratedPasswordEmail(email: string): Promise<void> {
+    return await fetchClient.post(`${baseURL}/forget-password`, { email });
 }
-
-export {signin, signup, sendGeneratedPasswordEmail}

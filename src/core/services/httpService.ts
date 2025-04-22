@@ -1,41 +1,93 @@
-import axios from 'axios';
-
-// Function to get the access token
 function getAccessToken(): string | null {
     return localStorage.getItem("ACCESS_TOKEN");
 }
 
-// Create an Axios instance
-const axiosInstance = axios.create({
-    baseURL: '/api',
-    headers: {
+const BASE_URL = '/api';
+
+function createHeaders(): HeadersInit {
+    const headers: HeadersInit = {
         'Content-Type': 'application/json',
-    },
-});
+    };
 
-// Add a request interceptor to include the Authorization header
-axiosInstance.interceptors.request.use(
-    (request) => {
-        const token = getAccessToken();
-        if (token) {
-            request.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return request;
-    },
-    (error) => Promise.reject(error)
-);
+    const token = getAccessToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
 
-// Add a response interceptor to handle responses and errors globally
-axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        const UNAUTHORIZED_PATHS = ['/signin', '/signup'];
-        if (error.response?.status === 403 && !UNAUTHORIZED_PATHS.includes(window.location.pathname)) {
-            localStorage.removeItem('ACCESS_TOKEN');
-            window.location.href = '/signin';
+    return headers;
+}
+
+// Custom fetch function with built-in error handling
+async function customFetch(url: string, options: RequestInit = {}): Promise<any> {
+    const fullUrl = `${BASE_URL}/${url}`;
+
+    // Set up request with headers
+    const requestOptions: RequestInit = {
+        ...options,
+        headers: {
+            ...createHeaders(),
+            ...options.headers,
+        },
+    };
+
+    try {
+        const response = await fetch(fullUrl, requestOptions);
+
+        // Handle unauthorized responses
+        if (response.status === 403) {
+            const UNAUTHORIZED_PATHS = ['/signin', '/signup'];
+            if (!UNAUTHORIZED_PATHS.includes(window.location.pathname)) {
+                localStorage.removeItem('ACCESS_TOKEN');
+                window.location.href = '/signin';
+                throw new Error('Unauthorized access');
+            }
         }
+
+        // Check if the response is ok (status in the range 200-299)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Check content type to determine parsing method
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        } else {
+            return await response.text();
+        }
+    } catch (error) {
         return Promise.reject(error);
     }
-);
+}
 
-export default axiosInstance;
+// Create HTTP method wrappers
+const fetchClient = {
+    get: (url: string, options: RequestInit = {}) =>
+        customFetch(url, { ...options, method: 'GET' }),
+
+    post: (url: string, data: any, options: RequestInit = {}) =>
+        customFetch(url, {
+            ...options,
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+
+    put: (url: string, data: any, options: RequestInit = {}) =>
+        customFetch(url, {
+            ...options,
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+
+    delete: (url: string, options: RequestInit = {}) =>
+        customFetch(url, { ...options, method: 'DELETE' }),
+
+    patch: (url: string, data: any, options: RequestInit = {}) =>
+        customFetch(url, {
+            ...options,
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
+};
+
+export default fetchClient;
